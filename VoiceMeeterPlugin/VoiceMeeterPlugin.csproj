@@ -149,6 +149,9 @@
       <EmbeddedResource Include="Resources\Images\clear.png" />
     </ItemGroup>
     <ItemGroup>
+      <Content Include="..\LICENSE">
+        <Link>VoiceMeeterPlugin\LICENSE</Link>
+      </Content>
       <Content Include="..\LoupedeckPackage.yaml">
         <Link>VoiceMeeterPlugin\LoupedeckPackage.yaml</Link>
       </Content>
