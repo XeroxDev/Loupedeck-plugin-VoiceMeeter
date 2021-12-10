@@ -38,12 +38,17 @@ jobs:
       #    tar --exclude=VoiceMeeter.lplug4 -acf VoiceMeeter.lplug4 *
       #    cd ..
 
+      - name: Get version from tag
+        id: tag_name
+        run: |
+          echo ::set-output name=current_version::${GITHUB_REF#refs/tags/v}
+        shell: bash
       - name: Get changelog entries
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
         with:
-          validation_depth: 10
-          version: ${{github.ref}}
+          #version: ${{ steps.tag_name.outputs.current_version }}
+          version: '1.0.0'
 
       - name: Create release
         uses: ncipollo/release-action@v1
