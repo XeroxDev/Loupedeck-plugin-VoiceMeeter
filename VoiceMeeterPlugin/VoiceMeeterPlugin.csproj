@@ -35,6 +35,12 @@
         <DebugSymbols>false</DebugSymbols>
         <DebugType>None</DebugType>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Runner' ">
+        <Optimize>true</Optimize>
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>None</DebugType>
+        <PluginPath>$(SolutionDir)release\bin\win\</PluginPath>
+    </PropertyGroup>
     <PropertyGroup>
         <PostBuildEvent>$(ILMergeConsolePath) /out:$(PluginPath)VoiceMeeterPlugin.dll $(OutputPath)VoiceMeeterPlugin.dll $(OutputPath)Microsoft.Win32.Registry.dll $(OutputPath)System.Drawing.Common.dll $(OutputPath)System.Reactive.dll $(OutputPath)System.Security.AccessControl.dll $(OutputPath)System.Security.Principal.Windows.dll $(OutputPath)System.Threading.Tasks.Extensions.dll</PostBuildEvent>
     </PropertyGroup>
@@ -147,14 +153,6 @@
     </ItemGroup>
     <ItemGroup>
       <EmbeddedResource Include="Resources\Images\clear.png" />
-    </ItemGroup>
-    <ItemGroup>
-      <Content Include="..\LICENSE">
-        <Link>VoiceMeeterPlugin\LICENSE</Link>
-      </Content>
-      <Content Include="..\LoupedeckPackage.yaml">
-        <Link>VoiceMeeterPlugin\LoupedeckPackage.yaml</Link>
-      </Content>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
