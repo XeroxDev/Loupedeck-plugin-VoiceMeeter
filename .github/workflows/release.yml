@@ -1,4 +1,5 @@
 name: Release
+
 on:
   workflow_dispatch:
   push:
@@ -16,6 +17,8 @@ jobs:
           fetch-depth: 0
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
+      - name: Add nuget
+        uses: nuget/setup-nuget@v1
 
       - name: Create distribution folder
         run: |
@@ -23,6 +26,9 @@ jobs:
           md release/bin/mac
           cp LoupedeckPackage.yaml release/
 
+      - name: Restore nuget packages
+        run: nuget restore VoiceMeeterPlugin.sln
+      
       - name: Build app for release
         run: msbuild VoiceMeeterPlugin/VoiceMeeterPlugin.csproj -t:rebuild -verbosity:diag -property:Configuration=Runner
 
