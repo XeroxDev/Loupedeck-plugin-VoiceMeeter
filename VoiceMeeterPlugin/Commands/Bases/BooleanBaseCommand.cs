@@ -2,14 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Threading.Tasks;
-    using System.Drawing;
-    using System.Drawing.Imaging;
-    using System.IO;
-
-    using Extensions;
 
     using Helper;
 
@@ -27,6 +23,7 @@
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
+        protected Boolean Loaded { get; set; }
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip)
         {
@@ -124,12 +121,14 @@
                             $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}") == 1;
                 }
             }
-
-            this.ActionImageChanged();
+            if (this.Loaded)
+            {
+                this.ActionImageChanged();
+            }
         }
-
         protected override Boolean OnLoad()
         {
+            this.Loaded = true;
             if (!this.IsRealClass)
             {
                 return base.OnLoad();
@@ -178,7 +177,7 @@
 
         protected override String GetCommandDisplayName(String actionParameter, PluginImageSize imageSize)
         {
-            if (!this.IsRealClass)
+            if (!this.IsRealClass || actionParameter == null)
             {
                 return null;
             }
@@ -223,6 +222,7 @@
 
         private void GetButton(String actionParameter, out Int32 mainIndex, out Int32 action, out Int32 actionIndex)
         {
+
             var splitted = actionParameter.Replace("VM-Strip", "").Replace(this.Command, "").Split('-');
 
             var firstSplitTruthy = Int32.TryParse(splitted[0], out var first);

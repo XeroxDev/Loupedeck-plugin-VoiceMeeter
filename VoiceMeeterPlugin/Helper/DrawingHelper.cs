@@ -99,8 +99,9 @@
 
             using var ms = new MemoryStream();
             bitmap.Save(ms, ImageFormat.Png);
+
+            return DrawingHelper.LoadBitmapImage(BitmapImage.FromArray(ms.ToArray()), outerText);
             
-            return DrawingHelper.LoadBitmapImage(new BitmapImage(ms.ToArray()), outerText);
         }
     }
 }
