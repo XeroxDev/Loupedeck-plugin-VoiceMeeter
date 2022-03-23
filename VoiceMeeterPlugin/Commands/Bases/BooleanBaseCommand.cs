@@ -27,6 +27,7 @@
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
+        protected Boolean Loaded { get; set; }
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip)
         {
@@ -125,11 +126,15 @@
                 }
             }
 
-            this.ActionImageChanged();
+            if (this.Loaded)
+            {
+            	this.ActionImageChanged();
+            }
         }
 
         protected override Boolean OnLoad()
         {
+        	this.Loaded = true;
             if (!this.IsRealClass)
             {
                 return base.OnLoad();
@@ -178,7 +183,7 @@
 
         protected override String GetCommandDisplayName(String actionParameter, PluginImageSize imageSize)
         {
-            if (!this.IsRealClass)
+            if (!this.IsRealClass || actionParameter == null)
             {
                 return null;
             }
