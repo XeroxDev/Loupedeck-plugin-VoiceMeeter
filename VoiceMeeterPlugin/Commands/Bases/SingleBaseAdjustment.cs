@@ -69,7 +69,7 @@
                 var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
                 var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
                 this.AddParameter(
-                    $"VM-Strip{hi}-{cmd}",
+                        GetActionParameterName(hi,cmd),
                     this.DisplayName,
                     $"{groupName} ({hi + 1 + this.Offset})",
                     "Input"
@@ -78,20 +78,25 @@
 
             this.GetNewSettings();
         }
+        private static String GetActionParameterName(Int32 stripNumber, String cmd) => $"VM-Strip{stripNumber}-{cmd}";
 
         private void GetNewSettings()
         {
             for (var hiIndex = 0; hiIndex < this.Actions.Length; hiIndex++)
             {
+                var old = this.Actions[hiIndex];
                 this.Actions[hiIndex] =
                     (Int32)Remote.GetParameter(
                         $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}");
-            }
-            if (this.Loaded) {
-	            this.AdjustmentValueChanged();
-        	}
-        }
 
+                if (this.Loaded && old != this.Actions[hiIndex])
+                {
+                    this.AdjustmentValueChanged(GetActionParameterName(hiIndex,this.Command));
+                }
+            }
+
+            
+        }
         protected override Boolean OnLoad()
         {
         	this.Loaded = true;
