@@ -25,7 +25,6 @@
         private Boolean IsStrip { get; }
         private Int32 MaxValue { get; }
         private Int32 MinValue { get; }
-        private Int32 ValueToAdd { get; }
         public Boolean IsRealClass { get; set; }
         protected Boolean Loaded { get; set; }
 
@@ -36,14 +35,7 @@
             this.IsStrip = isStrip;
 
             this.MinValue = minValue;
-            this.MaxValue = maxValue < 0 ? maxValue * -1 : maxValue;
-
-            if (minValue < 0)
-            {
-                this.ValueToAdd = this.MinValue * -1;
-                this.MaxValue += this.ValueToAdd;
-                this.MinValue = 0;
-            }
+            this.MaxValue = maxValue;
 
             if (!this.IsRealClass)
             {
@@ -151,8 +143,19 @@
                 return;
             }
 
+            var newVal = this.Actions[index] + diff;
+            if (newVal < this.MinValue)
+            {
+                newVal = this.MinValue;
+            }
+            else if (newVal > this.MaxValue)
+            {
+                newVal = this.MaxValue;
+            }
+            
+
             Remote.SetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}",
-                this.Actions[index] + diff);
+                newVal);
 
             this.AdjustmentValueChanged(actionParameter);
         }
@@ -175,13 +178,13 @@
             var g = Graphics.FromImage(bitmap);
 
             var currentValue = this.Actions[index];
-            var percentage = (currentValue + this.ValueToAdd - this.MinValue) / (this.MaxValue - this.MinValue) * 100;
+            var percentage = (currentValue - this.MinValue) / (this.MaxValue - this.MinValue) * 100;
 
             var bgColor = Color.FromArgb(156, 156, 156);
             var textColor = Color.White;
             var rect = new Rectangle(0, 0, bitmap.Width - 1, bitmap.Height - 1);
             var font = new Font("Arial", 20, FontStyle.Bold);
-            var brush = new SolidBrush(Color.White);
+            var brush = new SolidBrush(textColor);
             var width = (Int32)(rect.Width * percentage / 100.0);
             var sf = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
