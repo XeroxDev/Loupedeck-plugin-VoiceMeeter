@@ -176,9 +176,11 @@
 
             var index = this.GetButton(actionParameter);
 
+            var backgroundColor = this.Actions[index] > 0 ? ColorHelper.Danger : ColorHelper.Active;
+
             return index == -1
                 ? base.GetAdjustmentImage(actionParameter, imageSize)
-                : DrawingHelper.DrawVolumeBar(imageSize, new BitmapColor(156, 156, 156), BitmapColor.White, this.Actions[index], this.MinValue, this.MaxValue);
+                : DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, this.Actions[index], this.MinValue, this.MaxValue);
         }
 
         private Int32 GetButton(String actionParameter)

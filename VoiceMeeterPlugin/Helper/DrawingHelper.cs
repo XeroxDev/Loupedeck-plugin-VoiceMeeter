@@ -116,7 +116,7 @@
             builder.Translate(dim / 4, 0);
             builder.DrawRectangle(0, 0, dim / 2, dim - 1, backgroundColor);
             builder.FillRectangle(0, dim, dim / 2, -width, backgroundColor);
-            builder.FillRectangle(0, 0, dim / 2, dim - 1, new BitmapColor(0, 0, 0, 150));
+            // builder.FillRectangle(0, 0, dim / 2, dim - 1, new BitmapColor(0, 0, 0, 150));
             builder.ResetMatrix();
             builder.DrawText(currentValue.ToString(CultureInfo.CurrentCulture), foregroundColor);
             return builder.ToImage();
