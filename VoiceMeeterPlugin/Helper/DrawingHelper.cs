@@ -4,6 +4,7 @@
     using System.Drawing;
     using System.Drawing.Drawing2D;
     using System.Drawing.Imaging;
+    using System.Globalization;
     using System.IO;
 
     using Extensions;
@@ -55,7 +56,7 @@
         public static BitmapBuilder LoadBitmapBuilder
             (BitmapImage image, String text = null, BitmapColor? textColor = null)
         {
-            var builder = new BitmapBuilder(90, 90);
+            var builder = new BitmapBuilder(80, 80);
 
             builder.Clear(BitmapColor.Black);
             builder.DrawImage(image);
@@ -77,13 +78,13 @@
             BitmapColor? textColor = null, Int32 fontSize = 12)
         {
             // TODO: Make it outline
-            builder.DrawText(text, 0, -25, 90, 90, textColor, fontSize, 0, 0);
+            builder.DrawText(text, 0, -30, 80, 80, textColor, fontSize, 0, 0);
             return builder;
         }
 
         public static BitmapImage DrawDefaultImage(String innerText, String outerText, Color brushColor)
         {
-            var imageDimension = 90;
+            var imageDimension = 80;
             var dimension = 70;
             using var bitmap = new Bitmap(imageDimension, imageDimension);
             using var g = Graphics.FromImage(bitmap);
@@ -99,8 +100,28 @@
 
             using var ms = new MemoryStream();
             bitmap.Save(ms, ImageFormat.Png);
-            
-            return DrawingHelper.LoadBitmapImage(new BitmapImage(ms.ToArray()), outerText);
+
+            return DrawingHelper.LoadBitmapImage(BitmapImage.FromArray(ms.ToArray()), outerText);
         }
+
+        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue)
+        {
+            var dim = imageSize.GetDimension();
+            var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
+            var width = (Int32)(dim * percentage / 100.0);
+
+            var builder = new BitmapBuilder(dim, dim);
+            builder.Clear(BitmapColor.Black);
+
+            builder.Translate(dim / 4, 0);
+            builder.DrawRectangle(0, 0, dim / 2, dim - 1, backgroundColor);
+            builder.FillRectangle(0, dim, dim / 2, -width, backgroundColor);
+            // builder.FillRectangle(0, 0, dim / 2, dim - 1, new BitmapColor(0, 0, 0, 150));
+            builder.ResetMatrix();
+            builder.DrawText(currentValue.ToString(CultureInfo.CurrentCulture), foregroundColor);
+            return builder.ToImage();
+        }
+
+        public static Int32 GetDimension(this PluginImageSize size) => size == PluginImageSize.Width60 ? 50 : 80;
     }
 }

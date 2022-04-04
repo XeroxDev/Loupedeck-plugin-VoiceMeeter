@@ -27,6 +27,7 @@
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
+        protected Boolean Loaded { get; set; }
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip)
         {
@@ -60,7 +61,7 @@
                     var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
                     var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
                     this.AddParameter(
-                        $"VM-Strip{hi}-{cmd}{special}",
+                        GetActionParameterName(hi, cmd, special),
                         $"{this.DisplayName}{special}",
                         $"{groupName} ({hi + 1 + this.Offset})",
                         "Input"
@@ -88,7 +89,7 @@
                 var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
                 var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
                 this.AddParameter(
-                    $"VM-Strip{hi}-{cmd}2147483647",
+                    GetActionParameterName(hi, cmd),
                     this.DisplayName,
                     $"{groupName} ({hi + 1 + this.Offset})",
                     "Input"
@@ -97,6 +98,10 @@
 
             this.GetNewSettings();
         }
+
+        private static String GetActionParameterName(Int32 stripNumber, String cmd, Int32? specialNumber = null) =>
+            specialNumber == null ? $"VM-Strip{stripNumber}-{cmd}2147483647" : $"VM-Strip{stripNumber}-{cmd}{specialNumber.Value}";
+
 
         private void GetNewSettings()
         {
@@ -107,29 +112,38 @@
                     var hi = this.Actions[hiIndex];
                     for (var index = 1; index <= hi.Length; index++)
                     {
+                        var old = hi[index - 1];
                         hi[index - 1] =
                             (Int32)Remote.GetParameter(
                                 $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}{index}") ==
                             1;
+                        if (this.Loaded && old != hi[index - 1])
+                        {
+                            this.ActionImageChanged(GetActionParameterName(index, this.Command, hiIndex));
+                        }
                     }
                 }
             }
             else
             {
-                var hiArray = this.Actions[0];
-                for (var hiIndex = 0; hiIndex < hiArray.Length; hiIndex++)
+                var hi = this.Actions[0];
+                for (var index = 0; index < hi.Length; index++)
                 {
-                    hiArray[hiIndex] =
+                    var old = hi[index];
+                    hi[index] =
                         (Int32)Remote.GetParameter(
-                            $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}") == 1;
+                            $"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}") == 1;
+                    if (this.Loaded && old != hi[index])
+                    {
+                        this.ActionImageChanged(GetActionParameterName(index, this.Command));
+                    }
                 }
             }
-
-            this.ActionImageChanged();
         }
 
         protected override Boolean OnLoad()
         {
+            this.Loaded = true;
             if (!this.IsRealClass)
             {
                 return base.OnLoad();
@@ -178,7 +192,7 @@
 
         protected override String GetCommandDisplayName(String actionParameter, PluginImageSize imageSize)
         {
-            if (!this.IsRealClass)
+            if (!this.IsRealClass || actionParameter == null)
             {
                 return null;
             }
@@ -208,7 +222,7 @@
             }
 
             var enabled = this.Actions[mainIndex][actionIndex];
-            
+
             var actionString = this.IsMultiAction
                 ? $"{(this.IsStrip ? "Strip" : "Bus")}[{mainIndex + this.Offset}]"
                 : $"{(this.IsStrip ? "Strip" : "Bus")}[{action + this.Offset}]";
@@ -218,7 +232,7 @@
                 name = $"{(this.IsStrip ? "Strip" : "Bus")} {mainIndex + 1 + this.Offset}";
             }
 
-            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, enabled ? Color.GreenYellow : Color.DimGray);
+            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, enabled ? ColorHelper.Active : ColorHelper.Inactive);
         }
 
         private void GetButton(String actionParameter, out Int32 mainIndex, out Int32 action, out Int32 actionIndex)

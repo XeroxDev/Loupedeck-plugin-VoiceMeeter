@@ -11,6 +11,8 @@
 
     using Extensions;
 
+    using Helper;
+
     using Library.Voicemeeter;
 
     using Services;
@@ -25,8 +27,8 @@
         private Boolean IsStrip { get; }
         private Int32 MaxValue { get; }
         private Int32 MinValue { get; }
-        private Int32 ValueToAdd { get; }
         public Boolean IsRealClass { get; set; }
+        protected Boolean Loaded { get; set; }
 
         public SingleBaseAdjustment(Boolean hasRestart, Boolean isRealClass, Boolean isStrip, Int32 minValue = 0,
             Int32 maxValue = 10) : base(hasRestart)
@@ -35,14 +37,7 @@
             this.IsStrip = isStrip;
 
             this.MinValue = minValue;
-            this.MaxValue = maxValue < 0 ? maxValue * -1 : maxValue;
-
-            if (minValue < 0)
-            {
-                this.ValueToAdd = this.MinValue * -1;
-                this.MaxValue += this.ValueToAdd;
-                this.MinValue = 0;
-            }
+            this.MaxValue = maxValue;
 
             if (!this.IsRealClass)
             {
@@ -68,7 +63,7 @@
                 var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
                 var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
                 this.AddParameter(
-                    $"VM-Strip{hi}-{cmd}",
+                    GetActionParameterName(hi, cmd),
                     this.DisplayName,
                     $"{groupName} ({hi + 1 + this.Offset})",
                     "Input"
@@ -78,20 +73,27 @@
             this.GetNewSettings();
         }
 
+        private static String GetActionParameterName(Int32 stripNumber, String cmd) => $"VM-Strip{stripNumber}-{cmd}";
+
         private void GetNewSettings()
         {
             for (var hiIndex = 0; hiIndex < this.Actions.Length; hiIndex++)
             {
+                var old = this.Actions[hiIndex];
                 this.Actions[hiIndex] =
                     (Int32)Remote.GetParameter(
                         $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}");
-            }
 
-            this.AdjustmentValueChanged();
+                if (this.Loaded && old != this.Actions[hiIndex])
+                {
+                    this.AdjustmentValueChanged(GetActionParameterName(hiIndex, this.Command));
+                }
+            }
         }
 
         protected override Boolean OnLoad()
         {
+            this.Loaded = true;
             if (!this.IsRealClass)
             {
                 return base.OnLoad();
@@ -148,8 +150,19 @@
                 return;
             }
 
+            var newVal = this.Actions[index] + diff;
+            if (newVal < this.MinValue)
+            {
+                newVal = this.MinValue;
+            }
+            else if (newVal > this.MaxValue)
+            {
+                newVal = this.MaxValue;
+            }
+
+
             Remote.SetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}",
-                this.Actions[index] + diff);
+                newVal);
 
             this.AdjustmentValueChanged(actionParameter);
         }
@@ -163,35 +176,11 @@
 
             var index = this.GetButton(actionParameter);
 
-            if (index == -1)
-            {
-                return base.GetAdjustmentImage(actionParameter, imageSize);
-            }
+            var backgroundColor = this.Actions[index] > 0 ? ColorHelper.Danger : ColorHelper.Active;
 
-            var bitmap = new Bitmap(70, 20);
-            var g = Graphics.FromImage(bitmap);
-
-            var currentValue = this.Actions[index];
-            var percentage = (currentValue + this.ValueToAdd - this.MinValue) / (this.MaxValue - this.MinValue) * 100;
-
-            var bgColor = Color.FromArgb(156, 156, 156);
-            var textColor = Color.White;
-            var rect = new Rectangle(0, 0, bitmap.Width - 1, bitmap.Height - 1);
-            var font = new Font("Arial", 20, FontStyle.Bold);
-            var brush = new SolidBrush(Color.White);
-            var width = (Int32)(rect.Width * percentage / 100.0);
-            var sf = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-
-            g.DrawRectangle(new Pen(bgColor), rect);
-            g.FillRectangle(new SolidBrush(bgColor), 0, 0, width, rect.Height);
-            g.FillRectangle(new SolidBrush(Color.FromArgb(150, 0, 0, 0)), 0, 0, bitmap.Width, bitmap.Height);
-            g.DrawAutoAdjustedFont(currentValue.ToString(CultureInfo.CurrentCulture), font, brush, rect, sf, 12);
-
-            bitmap.RotateFlip(RotateFlipType.Rotate270FlipNone);
-
-            var ms = new MemoryStream();
-            bitmap.Save(ms, ImageFormat.Png);
-            return new BitmapImage(ms.ToArray());
+            return index == -1
+                ? base.GetAdjustmentImage(actionParameter, imageSize)
+                : DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, this.Actions[index], this.MinValue, this.MaxValue);
         }
 
         private Int32 GetButton(String actionParameter)

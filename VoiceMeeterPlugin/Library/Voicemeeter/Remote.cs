@@ -225,6 +225,12 @@
                 }
 
                 var voicemeeterString = voicemeeter.ToString().Split('\\').Last();
+                var directoryName = Path.GetDirectoryName(voicemeeter.ToString());
+                if (directoryName == null)
+                {
+                    SendError(ErrorCode.NotInstalled);
+                    return null;
+                }
 
                 if (voicemeeterString.ContainsNoCase('8'))
                 {
@@ -236,15 +242,23 @@
                 }
                 else
                 {
-                    Version = RunVoicemeeterParam.Voicemeeter;
+                    //Maybe their install EXE was named something different:)
+                    var potatoPanelFile = Path.Combine(directoryName, "VBVMVAIO3_ControlPanel.exe");
+                    var bananaPanelFile = Path.Combine(directoryName, "VBVMAUX_ControlPanel.exe");
+                    if (File.Exists(potatoPanelFile))
+                    {
+                        Version = RunVoicemeeterParam.VoicemeeterPotato;
+                    }
+                    else if (File.Exists(bananaPanelFile))
+                    {
+                        Version = RunVoicemeeterParam.VoicemeeterBanana;
+                    }
+                    else
+                    {
+                        Version = RunVoicemeeterParam.Voicemeeter;
+                    }
                 }
 
-                var directoryName = Path.GetDirectoryName(voicemeeter.ToString());
-                if (directoryName == null)
-                {
-                    SendError(ErrorCode.NotInstalled);
-                    return null;
-                }
 
                 _handle = Wrapper.LoadLibrary(
                     Path.Combine(directoryName,
