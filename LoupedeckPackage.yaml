@@ -10,8 +10,7 @@ supportedDevices:
   - LoupedeckLive
 
 pluginFileName: VoiceMeeterPlugin.dll
-pluginFolderWin: ./bin/plugin/
-pluginFolderMac: ./bin/plugin/
+pluginFolderWin: ./bin/win/
 
 license: MIT
 licenseUrl: https://opensource.org/licenses/MIT

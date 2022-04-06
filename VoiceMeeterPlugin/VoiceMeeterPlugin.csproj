@@ -33,7 +33,7 @@
         <Optimize>true</Optimize>
         <DebugSymbols>false</DebugSymbols>
         <DebugType>None</DebugType>
-        <OutputPath>$(BaseOutputPath)plugin\</OutputPath>
+        <OutputPath>$(BaseOutputPath)win\</OutputPath>
         <PostBuildEvent>
             cd $(OutputPath)
             dir /s /b
