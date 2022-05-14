@@ -6,7 +6,7 @@
 
     public class BusMuteCommand : BooleanBaseCommand
     {
-        public BusMuteCommand() : base(true, false) =>
+        public BusMuteCommand() : base(true, false, ColorHelper.Danger) =>
             this.CreateCommands(
                 VoiceMeeterHelper.GetHardwareInputCount() + VoiceMeeterHelper.GetVirtualInputCount(),
                 "Mute",

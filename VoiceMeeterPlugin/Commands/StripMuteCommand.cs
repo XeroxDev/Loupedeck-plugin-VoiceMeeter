@@ -6,7 +6,7 @@
 
     public class StripMuteCommand : BooleanBaseCommand
     {
-        public StripMuteCommand() : base(true, true) =>
+        public StripMuteCommand() : base(true, true, ColorHelper.Danger) =>
             this.CreateCommands(
                 VoiceMeeterHelper.GetHardwareInputCount() + VoiceMeeterHelper.GetVirtualInputCount(),
                 "Mute",
