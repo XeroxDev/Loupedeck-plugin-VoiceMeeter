@@ -43,9 +43,9 @@ You can also join my discord [here](https://s.tswi.me/discord)
 # 6. How to contribute?
 
 Just fork the repository and create PR's, but we use
-[standard-version](https://github.com/conventional-changelog/standard-version) to optimal release the plugin.
+[commitizen](https://commitizen-tools.github.io/commitizen/) to optimal release the plugin.
 
-standard-version is following the [conventionalcommits](https://www.conventionalcommits.org) specification which follows
+[commitizen](https://commitizen-tools.github.io/commitizen/) is following the [conventionalcommits](https://www.conventionalcommits.org) specification which follows
 the
 [angular commit guidelines](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines)
 
