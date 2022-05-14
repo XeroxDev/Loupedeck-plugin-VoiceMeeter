@@ -2,14 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Threading.Tasks;
-    using System.Drawing;
-    using System.Drawing.Imaging;
-    using System.IO;
-
-    using Extensions;
 
     using Helper;
 
@@ -27,12 +23,16 @@
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
+        private Color ActiveColor { get; }
+        private Color InactiveColor { get; }
         protected Boolean Loaded { get; set; }
 
-        public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip)
+        public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, Color? activeColor = null, Color? inactiveColor = null)
         {
             this.IsRealClass = isRealClass;
             this.IsStrip = isStrip;
+            this.ActiveColor = activeColor ?? ColorHelper.Active;
+            this.InactiveColor = inactiveColor ?? ColorHelper.Inactive;
             if (!this.IsRealClass)
             {
                 return;
@@ -119,7 +119,7 @@
                             1;
                         if (this.Loaded && old != hi[index - 1])
                         {
-                            this.ActionImageChanged(GetActionParameterName(index, this.Command, hiIndex));
+                            this.ActionImageChanged(GetActionParameterName(hiIndex, this.Command, index));
                         }
                     }
                 }
@@ -232,7 +232,7 @@
                 name = $"{(this.IsStrip ? "Strip" : "Bus")} {mainIndex + 1 + this.Offset}";
             }
 
-            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, enabled ? ColorHelper.Active : ColorHelper.Inactive);
+            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, enabled ? this.ActiveColor : this.InactiveColor);
         }
 
         private void GetButton(String actionParameter, out Int32 mainIndex, out Int32 action, out Int32 actionIndex)

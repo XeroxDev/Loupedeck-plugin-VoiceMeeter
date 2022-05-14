@@ -31,12 +31,7 @@
         {
             var buffer = new StringBuilder(255);
             var code = RemoteWrapper.InternalGetParameterW(parameter, buffer);
-            if (code == 0)
-            {
-                return buffer.ToString();
-            }
-
-            return null;
+            return code == 0 ? buffer.ToString() : null;
         }
 
         /// <summary>
@@ -133,7 +128,7 @@
         /// Eject Cassette
         /// </summary>
         public static void Eject() => TestResult(RemoteWrapper.SetParameter(VoicemeeterCommand.Eject, 1));
-        
+
         /// <summary>
         /// Reset all configuration
         /// </summary>

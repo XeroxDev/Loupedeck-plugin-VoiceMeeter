@@ -6,6 +6,8 @@ namespace Loupedeck.VoiceMeeterPlugin
 
     using Library.Voicemeeter;
 
+    using Services;
+
     public class VoiceMeeterPlugin : Plugin
     {
         public override Boolean UsesApplicationApiOnly => true;
@@ -18,7 +20,17 @@ namespace Loupedeck.VoiceMeeterPlugin
             this.Info.Icon256x256 = DrawingHelper.ReadImage("icon-256", addPath: "Icon");
         }
 
-        public override void Unload() => RemoteWrapper.Logout();
+        public override void Unload()
+        {
+            try
+            {
+                RemoteWrapper.Logout();   
+            }
+            catch
+            {
+                // ignored
+            }
+        }
 
         public override void RunCommand(String commandName, String parameter)
         {
