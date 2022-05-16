@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## v2.0.1 (2022-05-16)
+
+### Fix
+
+- give every icon the right color
+- icons update again
+
 ## [2.0.0](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v1.0.0...v2.0.0) (2022-04-04)
 
 
