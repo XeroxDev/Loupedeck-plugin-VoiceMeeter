@@ -104,7 +104,7 @@
             return DrawingHelper.LoadBitmapImage(BitmapImage.FromArray(ms.ToArray()), outerText);
         }
 
-        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue)
+        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue, Int32 scaleFactor)
         {
             var dim = imageSize.GetDimension();
             var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
@@ -118,7 +118,7 @@
             builder.FillRectangle(0, dim, dim / 2, -width, backgroundColor);
             // builder.FillRectangle(0, 0, dim / 2, dim - 1, new BitmapColor(0, 0, 0, 150));
             builder.ResetMatrix();
-            builder.DrawText(currentValue.ToString(CultureInfo.CurrentCulture), foregroundColor);
+            builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
             return builder.ToImage();
         }
 
