@@ -27,17 +27,19 @@
         private Boolean IsStrip { get; }
         private Int32 MaxValue { get; }
         private Int32 MinValue { get; }
+        private Int32 ScaleFactor { get; }
         public Boolean IsRealClass { get; set; }
         protected Boolean Loaded { get; set; }
 
         public SingleBaseAdjustment(Boolean hasRestart, Boolean isRealClass, Boolean isStrip, Int32 minValue = 0,
-            Int32 maxValue = 10) : base(hasRestart)
+            Int32 maxValue = 10, Int32 scaleFactor = 1) : base(hasRestart)
         {
             this.IsRealClass = isRealClass;
             this.IsStrip = isStrip;
 
             this.MinValue = minValue;
             this.MaxValue = maxValue;
+            this.ScaleFactor = scaleFactor;
 
             if (!this.IsRealClass)
             {
@@ -81,8 +83,8 @@
             {
                 var old = this.Actions[hiIndex];
                 this.Actions[hiIndex] =
-                    (Int32)Remote.GetParameter(
-                        $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}");
+                    (Int32)(Remote.GetParameter(
+                        $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}") * this.ScaleFactor);
 
                 if (this.Loaded && old != this.Actions[hiIndex])
                 {
@@ -162,7 +164,7 @@
 
 
             Remote.SetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}",
-                newVal);
+                newVal / this.ScaleFactor);
 
             this.AdjustmentValueChanged(actionParameter);
         }
@@ -180,7 +182,7 @@
 
             return index == -1
                 ? base.GetAdjustmentImage(actionParameter, imageSize)
-                : DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, this.Actions[index], this.MinValue, this.MaxValue);
+                : DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, this.Actions[index], this.MinValue, this.MaxValue, this.ScaleFactor);
         }
 
         private Int32 GetButton(String actionParameter)

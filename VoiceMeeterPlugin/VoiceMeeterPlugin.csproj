@@ -122,6 +122,7 @@
         <Compile Include="Commands\HardwareInputMonoCommand.cs" />
         <Compile Include="Commands\StripGainAdjustment.cs" />
         <Compile Include="Commands\StripMuteCommand.cs" />
+        <Compile Include="Commands\StripPanAdjustment.cs" />
         <Compile Include="Commands\StripSoloCommand.cs" />
         <Compile Include="Commands\VirtualInputEQGainAdjustment.cs" />
         <Compile Include="Enums\ErrorCode.cs" />
