@@ -229,7 +229,9 @@
             var name = Remote.GetTextParameter($"{actionString}.Label");
             if (String.IsNullOrEmpty(name))
             {
-                name = $"{(this.IsStrip ? "Strip" : "Bus")} {mainIndex + 1 + this.Offset}";
+                name = this.IsMultiAction
+                    ? $"{(this.IsStrip ? "Strip" : "Bus")} {mainIndex + 1 + this.Offset}"
+                    : $"{(this.IsStrip ? "Strip" : "Bus")} {action + 1 + this.Offset}";
             }
 
             return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, enabled ? this.ActiveColor : this.InactiveColor);
