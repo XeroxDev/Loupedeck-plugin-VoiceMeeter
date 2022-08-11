@@ -113,6 +113,7 @@
         <Compile Include="Commands\HardwareInputPostFxCommand.cs" />
         <Compile Include="Commands\HardwareInputPostReverbCommand.cs" />
         <Compile Include="Commands\HardwareInputReverbAdjustment.cs" />
+        <Compile Include="Commands\LoadCommand.cs" />
         <Compile Include="Commands\ResetCommand.cs" />
         <Compile Include="Commands\RestartCommand.cs" />
         <Compile Include="Commands\ShowCommand.cs" />
