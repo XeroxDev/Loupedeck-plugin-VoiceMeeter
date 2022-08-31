@@ -39,7 +39,10 @@
         {
             if (!this._observers.Contains(observer))
             {
-                this._observers.Add(observer);
+                lock (this._observers)
+                {
+                    this._observers.Add(observer);
+                }
             }
 
             return new Unsubscriber(this._observers, observer);
@@ -47,9 +50,12 @@
 
         private void Notify(Int32 value)
         {
-            foreach (var observer in this._observers)
+            lock (this._observers)
             {
-                observer.OnNext(value);
+                foreach (var observer in this._observers)
+                {
+                    observer.OnNext(value);
+                }
             }
         }
 
