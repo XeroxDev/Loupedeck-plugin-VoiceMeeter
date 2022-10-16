@@ -104,7 +104,7 @@
             return DrawingHelper.LoadBitmapImage(BitmapImage.FromArray(ms.ToArray()), outerText);
         }
 
-        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue, Int32 scaleFactor)
+        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue, Int32 scaleFactor, String name = "")
         {
             var dim = imageSize.GetDimension();
             var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
@@ -119,6 +119,22 @@
             // builder.FillRectangle(0, 0, dim / 2, dim - 1, new BitmapColor(0, 0, 0, 150));
             builder.ResetMatrix();
             builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
+            
+            // if name is available, draw it under the volume bar
+            if (String.IsNullOrEmpty(name))
+            {
+                return builder.ToImage();
+            }
+
+            var fontSize = name.Length switch
+            {
+                > 15 => 6,
+                > 10 => 8,
+                _ => 12
+            };
+
+            builder.DrawText(name, 0, dim / 2, dim, dim / 2, foregroundColor, fontSize, 0, 0);
+
             return builder.ToImage();
         }
 

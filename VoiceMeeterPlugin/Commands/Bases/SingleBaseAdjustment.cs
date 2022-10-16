@@ -1,10 +1,6 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Commands.Bases
 {
     using System;
-    using System.Drawing;
-    using System.Drawing.Imaging;
-    using System.Globalization;
-    using System.IO;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Threading.Tasks;
@@ -19,7 +15,7 @@
 
     public class SingleBaseAdjustment : PluginDynamicAdjustment
     {
-        private Single[] Actions { get; set; }
+        private AdjustmentItem[] Actions { get; set; }
         private VoiceMeeterService VmService { get; }
         private String Command { get; set; }
         private Subject<Boolean> OnDestroy { get; } = new();
@@ -59,7 +55,7 @@
                 await Task.Delay(1000);
             }
 
-            this.Actions = new Single[stripCount];
+            this.Actions = new AdjustmentItem[stripCount];
             for (var hi = 0; hi < stripCount; hi++)
             {
                 var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
@@ -81,12 +77,20 @@
         {
             for (var hiIndex = 0; hiIndex < this.Actions.Length; hiIndex++)
             {
-                var old = this.Actions[hiIndex];
-                this.Actions[hiIndex] =
-                    (Int32)(Remote.GetParameter(
-                        $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}") * this.ScaleFactor);
+                var oldItem = this.Actions[hiIndex] ?? new AdjustmentItem();
 
-                if (this.Loaded && old != this.Actions[hiIndex])
+                var param = $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}]";
+
+                var newItem = new AdjustmentItem
+                {
+                    Value = (Int32)(Remote.GetParameter($"{param}.{this.Command}") * this.ScaleFactor),
+                    Name = Remote.GetTextParameter($"{param}.Label"),
+                    IsMuted = Remote.GetParameter($"{param}.Mute") > 0,
+                };
+
+                this.Actions[hiIndex] = newItem;
+
+                if (this.Loaded && (oldItem.Value != newItem.Value || oldItem.Name != newItem.Name || oldItem.IsMuted != newItem.IsMuted))
                 {
                     this.AdjustmentValueChanged(GetActionParameterName(hiIndex, this.Command));
                 }
@@ -147,12 +151,12 @@
 
             var index = this.GetButton(actionParameter);
 
-            if (index == -1)
+            if (index == -1 || this.Actions[index] is null)
             {
                 return;
             }
 
-            var newVal = this.Actions[index] + diff;
+            var newVal = this.Actions[index].Value + diff;
             if (newVal < this.MinValue)
             {
                 newVal = this.MinValue;
@@ -178,11 +182,15 @@
 
             var index = this.GetButton(actionParameter);
 
-            var backgroundColor = this.Actions[index] > 0 ? ColorHelper.Danger : ColorHelper.Active;
+            if (this.Actions[index] is null || index == -1)
+            {
+                return base.GetAdjustmentImage(actionParameter, imageSize);
+            }
 
-            return index == -1
-                ? base.GetAdjustmentImage(actionParameter, imageSize)
-                : DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, this.Actions[index], this.MinValue, this.MaxValue, this.ScaleFactor);
+            var (value, name, isMuted) = this.Actions[index];
+            var backgroundColor = !isMuted ? this.Actions[index].Value > 0 ? ColorHelper.Danger : ColorHelper.Active : ColorHelper.Inactive;
+
+            return DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, value, this.MinValue, this.MaxValue, this.ScaleFactor, name);
         }
 
         private Int32 GetButton(String actionParameter)
@@ -196,6 +204,20 @@
             else
             {
                 return -1;
+            }
+        }
+
+        private class AdjustmentItem
+        {
+            public Single Value { get; set; }
+            public String Name { get; set; }
+            public Boolean IsMuted { get; set; }
+
+            public void Deconstruct(out Single value, out String name, out Boolean isMuted)
+            {
+                value = this.Value;
+                name = this.Name;
+                isMuted = this.IsMuted;
             }
         }
     }
