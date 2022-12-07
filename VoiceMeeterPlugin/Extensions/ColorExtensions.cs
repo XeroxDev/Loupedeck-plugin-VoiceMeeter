@@ -22,11 +22,11 @@
 
 namespace Loupedeck.VoiceMeeterPlugin.Extensions
 {
-    using System.Drawing;
+    using SkiaSharp;
 
     public static class ColorExtensions
     {
-        public static Color ToColor(this BitmapColor color) => System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);
-        public static BitmapColor ToBitmapColor(this Color color) => new(color.R, color.G, color.B, color.A);
+        public static SKColor ToSKColor(this BitmapColor color) => new(color.R, color.G, color.B, color.A);
+        public static BitmapColor ToBitmapColor(this SKColor color) => new(color.Red, color.Green, color.Blue, color.Alpha);
     }
 }

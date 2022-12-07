@@ -1,7 +1,5 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Commands
 {
-    using System;
-
     using Bases;
 
     using Library.Voicemeeter;

@@ -22,12 +22,12 @@
 
 namespace Loupedeck.VoiceMeeterPlugin.Helper
 {
-    using System.Drawing;
+    using SkiaSharp;
 
     public static class ColorHelper
     {
-        public static Color Inactive => Color.FromArgb(59, 75, 85);
-        public static Color Active => Color.FromArgb(82, 144, 112);
-        public static Color Danger => Color.FromArgb(196, 78, 61);
+        public static SKColor Inactive => new(59, 75, 85);
+        public static SKColor Active => new(82, 144, 112);
+        public static SKColor Danger => new(196, 78, 61);
     }
 }

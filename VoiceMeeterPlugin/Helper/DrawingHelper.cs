@@ -1,47 +1,42 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Helper
 {
     using System;
-    using System.Drawing;
-    using System.Drawing.Drawing2D;
-    using System.Drawing.Imaging;
     using System.Globalization;
-    using System.IO;
 
-    using Extensions;
+    using SkiaSharp;
 
     public static class DrawingHelper
     {
         private static String RESOURCE_PATH = "Loupedeck.VoiceMeeterPlugin.Resources";
 
-        public static GraphicsPath RoundedRect(Rectangle bounds, Int32 radius)
+        public static SKPath RoundedRect(SKRect bounds, Int32 radius)
         {
             var diameter = radius * 2;
-            Size size = new Size(diameter, diameter);
-            Rectangle arc = new Rectangle(bounds.Location, size);
-            GraphicsPath path = new GraphicsPath();
+            SKRect arc = new SKRect(bounds.Left, bounds.Top, bounds.Left + diameter, bounds.Top + diameter);
+            SKPath path = new SKPath();
 
             if (radius == 0)
             {
-                path.AddRectangle(bounds);
+                path.AddRect(bounds);
                 return path;
             }
 
             // top left arc
-            path.AddArc(arc, 180, 90);
+            path.ArcTo(arc, 180, 90, false);
 
             // top right arc
-            arc.X = bounds.Right - diameter;
-            path.AddArc(arc, 270, 90);
+            arc = new SKRect(bounds.Right - diameter, bounds.Top, bounds.Right, bounds.Top + diameter);
+            path.ArcTo(arc, 270, 90, false);
 
             // bottom right arc
-            arc.Y = bounds.Bottom - diameter;
-            path.AddArc(arc, 0, 90);
+            arc = new SKRect(bounds.Right - diameter, bounds.Bottom - diameter, bounds.Right, bounds.Bottom);
+            path.ArcTo(arc, 0, 90, false);
 
             // bottom left arc
-            arc.X = bounds.Left;
-            path.AddArc(arc, 90, 90);
+            arc = new SKRect(bounds.Left, bounds.Bottom - diameter, bounds.Left + diameter, bounds.Bottom);
+            path.ArcTo(arc, 90, 90, false);
 
-            path.CloseFigure();
+            path.Close();
             return path;
         }
 
@@ -60,7 +55,6 @@
 
             builder.Clear(BitmapColor.Black);
             builder.DrawImage(image);
-            // builder.FillRectangle(0, 0, 90, 90, new BitmapColor(0, 0, 0, 100));
 
             return text is null ? builder : builder.AddTextOutlined(text, textColor: textColor);
         }
@@ -82,29 +76,58 @@
             return builder;
         }
 
-        public static BitmapImage DrawDefaultImage(String innerText, String outerText, Color brushColor)
+        public static BitmapImage DrawDefaultImage(String innerText, String outerText, SKColor brushColor)
         {
-            var imageDimension = 80;
-            var dimension = 70;
-            using var bitmap = new Bitmap(imageDimension, imageDimension);
-            using var g = Graphics.FromImage(bitmap);
-            var font = new Font("Arial", 20, FontStyle.Bold);
-            var brush = new SolidBrush(brushColor);
-            var rect = new Rectangle(0, 0, dimension, dimension / 2);
-            rect.X = bitmap.Width / 2 - rect.Width / 2;
-            rect.Y = bitmap.Height / 2 - rect.Height / 2;
-            var sf = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            // Set the dimensions and font
+            int width = 80;
+            int height = 80;
+            SKTypeface font = SKTypeface.FromFamilyName("Arial", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+            int fontSize = 20;
 
-            g.DrawPath(new Pen(brush.Color, 2), DrawingHelper.RoundedRect(rect, 15));
-            g.DrawAutoAdjustedFont(innerText, font, brush, rect, sf, 20);
+            // Create the canvas and paint
+            var info = new SKImageInfo(width, height);
+            var surface = SKSurface.Create(info);
+            var canvas = surface.Canvas;
+            var paint = new SKPaint { Color = brushColor, IsAntialias = true, Typeface = font };
 
-            using var ms = new MemoryStream();
-            bitmap.Save(ms, ImageFormat.Png);
+            // Calculate the dimensions of the rounded rectangle outline
+            var rect = new SKRect(5, 20, width - 5, height - 20);
 
-            return DrawingHelper.LoadBitmapImage(BitmapImage.FromArray(ms.ToArray()), outerText);
+            // Adjust the font size if necessary to fit the inner text within the dimensions of the rounded rectangle outline
+            while (true)
+            {
+                paint.TextSize = fontSize;
+                SKRect tb = new SKRect();
+                paint.MeasureText(innerText, ref tb);
+                if (tb.Width < rect.Width - 5 && tb.Height < rect.Height)
+                {
+                    break;
+                }
+
+                fontSize--;
+            }
+
+            // Draw the rounded rectangle outline
+            var cornerRadius = Math.Min(width, height) / 2;
+            paint.Style = SKPaintStyle.Stroke;
+            paint.StrokeWidth = 2;
+            canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint);
+            paint.Style = SKPaintStyle.Fill;
+
+            // Draw the inner text centered within the rounded rectangle outline
+            paint.TextAlign = SKTextAlign.Center;
+            paint.TextSize = fontSize;
+            canvas.DrawText(innerText, rect.MidX, rect.MidY - ((paint.FontMetrics.Descent + paint.FontMetrics.Ascent) / 2), paint);
+
+            // Save the image to memory and return the memory streams
+            var image = surface.Snapshot();
+            var data = image.Encode(SKEncodedImageFormat.Png, 100);
+
+            return LoadBitmapImage(BitmapImage.FromArray(data.ToArray()), outerText);
         }
 
-        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue, Int32 scaleFactor, String name = "")
+        public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue,
+            Int32 scaleFactor, String name = "")
         {
             var dim = imageSize.GetDimension();
             var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
@@ -116,10 +139,9 @@
             builder.Translate(dim / 4, 0);
             builder.DrawRectangle(0, 0, dim / 2, dim - 1, backgroundColor);
             builder.FillRectangle(0, dim, dim / 2, -width, backgroundColor);
-            // builder.FillRectangle(0, 0, dim / 2, dim - 1, new BitmapColor(0, 0, 0, 150));
             builder.ResetMatrix();
             builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
-            
+
             // if name is available, draw it under the volume bar
             if (String.IsNullOrEmpty(name))
             {

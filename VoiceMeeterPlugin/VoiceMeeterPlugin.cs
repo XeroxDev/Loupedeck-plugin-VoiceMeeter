@@ -6,8 +6,6 @@ namespace Loupedeck.VoiceMeeterPlugin
 
     using Library.Voicemeeter;
 
-    using Services;
-
     public class VoiceMeeterPlugin : Plugin
     {
         public override Boolean UsesApplicationApiOnly => true;
@@ -24,7 +22,7 @@ namespace Loupedeck.VoiceMeeterPlugin
         {
             try
             {
-                RemoteWrapper.Logout();   
+                RemoteWrapper.Logout();
             }
             catch
             {

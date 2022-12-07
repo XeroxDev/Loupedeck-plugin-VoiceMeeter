@@ -1,15 +1,8 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Commands.Bases
 {
     using System;
-    using System.Drawing;
-    using System.Drawing.Imaging;
-    using System.IO;
-
-    using Extensions;
 
     using Helper;
-
-    using Library.Voicemeeter;
 
     public class SingleBaseCommand : PluginDynamicCommand
     {

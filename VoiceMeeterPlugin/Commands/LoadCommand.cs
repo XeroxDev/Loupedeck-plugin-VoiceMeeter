@@ -3,8 +3,6 @@
     using System;
     using System.IO;
 
-    using Bases;
-
     using Helper;
 
     using Library.Voicemeeter;

@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Threading.Tasks;
@@ -12,6 +11,8 @@
     using Library.Voicemeeter;
 
     using Services;
+
+    using SkiaSharp;
 
     public class BooleanBaseCommand : PluginDynamicCommand
     {
@@ -23,11 +24,11 @@
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
-        private Color ActiveColor { get; }
-        private Color InactiveColor { get; }
+        private SKColor ActiveColor { get; }
+        private SKColor InactiveColor { get; }
         protected Boolean Loaded { get; set; }
 
-        public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, Color? activeColor = null, Color? inactiveColor = null)
+        public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, SKColor? activeColor = null, SKColor? inactiveColor = null)
         {
             this.IsRealClass = isRealClass;
             this.IsStrip = isStrip;

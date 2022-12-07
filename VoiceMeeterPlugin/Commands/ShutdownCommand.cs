@@ -6,7 +6,7 @@
 
     public class ShutdownCommand : SingleBaseCommand
     {
-        public ShutdownCommand() : base("Shutdown", "Shutdown VoiceMeeter","Special",Remote.Shutdown)
+        public ShutdownCommand() : base("Shutdown", "Shutdown VoiceMeeter", "Special", Remote.Shutdown)
         {
         }
     }
