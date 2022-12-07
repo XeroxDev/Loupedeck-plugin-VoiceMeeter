@@ -88,7 +88,12 @@
             var info = new SKImageInfo(width, height);
             var surface = SKSurface.Create(info);
             var canvas = surface.Canvas;
-            var paint = new SKPaint { Color = brushColor, IsAntialias = true, Typeface = font };
+            var paint = new SKPaint
+            {
+                Color = brushColor,
+                IsAntialias = true,
+                Typeface = font
+            };
 
             // Calculate the dimensions of the rounded rectangle outline
             var rect = new SKRect(5, 20, width - 5, height - 20);
@@ -103,7 +108,6 @@
                 {
                     break;
                 }
-
                 fontSize--;
             }
 
@@ -142,20 +146,34 @@
             builder.ResetMatrix();
             builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
 
-            // if name is available, draw it under the volume bar
+            // if name is available, draw it over the volume bar
             if (String.IsNullOrEmpty(name))
             {
                 return builder.ToImage();
             }
 
-            var fontSize = name.Length switch
+            var fontSize = 16;
+            // create a SKPaint object for measuring the text
+            var paint = new SKPaint
             {
-                > 15 => 6,
-                > 10 => 8,
-                _ => 12
+                TextSize = fontSize,
+                IsAntialias = true
             };
 
-            builder.DrawText(name, 0, dim / 2, dim, dim / 2, foregroundColor, fontSize, 0, 0);
+            // measure the size of the text
+            var textBounds = new SKRect();
+            paint.MeasureText(name, ref textBounds);
+
+            // adjust the font size until the text fits within the bounds of the image
+            while (textBounds.Width > dim || textBounds.Height > dim)
+            {
+                fontSize -= 1;
+                paint.TextSize = fontSize;
+                paint.MeasureText(name, ref textBounds);
+            }
+
+            // draw the text using the calculated font size
+            builder.DrawText(name, 0, dim / 2 * -1 + fontSize / 2, dim, dim, foregroundColor, fontSize, 0, 0);
 
             return builder.ToImage();
         }
