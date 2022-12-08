@@ -99,6 +99,7 @@
     <Compile Include="Actions\LoadCommand.cs" />
     <Compile Include="Actions\ResetCommand.cs" />
     <Compile Include="Actions\RestartCommand.cs" />
+    <Compile Include="Actions\BusSelCommand.cs" />
     <Compile Include="Actions\ShowCommand.cs" />
     <Compile Include="Actions\ShutdownCommand.cs" />
     <Compile Include="Actions\StripACommand.cs" />
