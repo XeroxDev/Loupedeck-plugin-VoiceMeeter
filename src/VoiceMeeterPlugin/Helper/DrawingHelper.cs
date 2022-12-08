@@ -131,7 +131,7 @@
         }
 
         public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue,
-            Int32 scaleFactor, String name = "")
+            Int32 scaleFactor, String cmd, String name = "")
         {
             var dim = imageSize.GetDimension();
             var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
@@ -145,6 +145,13 @@
             builder.FillRectangle(0, dim, dim / 2, -width, backgroundColor);
             builder.ResetMatrix();
             builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
+            
+            const Int32 fontSize = 16;
+
+            var cmdSize = GetFontSize(fontSize, cmd, dim);
+            
+            // Draw cmd text at the bottom
+            builder.DrawText(cmd, 0, dim / 2 - fontSize / 2, dim, dim, foregroundColor, fontSize, 0, 0);
 
             // if name is available, draw it over the volume bar
             if (String.IsNullOrEmpty(name))
@@ -152,7 +159,16 @@
                 return builder.ToImage();
             }
 
-            var fontSize = 16;
+            var nameSize = GetFontSize(fontSize, name, dim);
+
+            // draw the text using the calculated font size
+            builder.DrawText(name, 0, dim / 2 * -1 + nameSize / 2, dim, dim, foregroundColor, nameSize, 0, 0);
+
+            return builder.ToImage();
+        }
+
+        private static Int32 GetFontSize(Int32 fontSize, String text, Int32 dim)
+        {
             // create a SKPaint object for measuring the text
             var paint = new SKPaint
             {
@@ -162,21 +178,18 @@
 
             // measure the size of the text
             var textBounds = new SKRect();
-            paint.MeasureText(name, ref textBounds);
+            paint.MeasureText(text, ref textBounds);
 
             // adjust the font size until the text fits within the bounds of the image
             while (textBounds.Width > dim || textBounds.Height > dim)
             {
                 fontSize -= 1;
                 paint.TextSize = fontSize;
-                paint.MeasureText(name, ref textBounds);
+                paint.MeasureText(text, ref textBounds);
             }
-
-            // draw the text using the calculated font size
-            builder.DrawText(name, 0, dim / 2 * -1 + fontSize / 2, dim, dim, foregroundColor, fontSize, 0, 0);
-
-            return builder.ToImage();
-        }
+            
+            return fontSize;
+        } 
 
         public static Int32 GetDimension(this PluginImageSize size) => size == PluginImageSize.Width60 ? 50 : 80;
     }

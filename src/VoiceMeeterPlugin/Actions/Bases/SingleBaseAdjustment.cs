@@ -188,7 +188,7 @@
             var (value, name, isMuted) = this.Actions[index];
             var backgroundColor = !isMuted ? this.Actions[index].Value > 0 ? ColorHelper.Danger : ColorHelper.Active : ColorHelper.Inactive;
 
-            return DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, value, this.MinValue, this.MaxValue, this.ScaleFactor, name);
+            return DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, value, this.MinValue, this.MaxValue, this.ScaleFactor, this.Command, name);
         }
 
         private Int32 GetButton(String actionParameter)
