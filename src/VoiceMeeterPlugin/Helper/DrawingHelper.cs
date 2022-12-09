@@ -133,17 +133,24 @@
         public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue,
             Int32 scaleFactor, String cmd, String name = "")
         {
+            // Prepare variables
             var dim = imageSize.GetDimension();
             var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
-            var width = (Int32)(dim * percentage / 100.0);
-
+            var height = (Int32)(dim * 1.0);
+            var width = (Int32)(dim * 0.7);
+            var calculatedHeight = (Int32)(height * percentage / 100);
+            var xCenter = dim / 2 - width / 2;
+            var yCenter = dim / 2 + height / 2;
             var builder = new BitmapBuilder(dim, dim);
+            
+            // Reset to black
             builder.Clear(BitmapColor.Black);
-
-            builder.Translate(dim / 4, 0);
-            builder.DrawRectangle(0, 0, dim / 2, dim - 1, backgroundColor);
-            builder.FillRectangle(0, dim, dim / 2, -width, backgroundColor);
-            builder.ResetMatrix();
+            
+            // Draw volume bar and border
+            builder.DrawRectangle(xCenter, yCenter, width, -height, backgroundColor);
+            builder.FillRectangle(xCenter, yCenter, width, -calculatedHeight, backgroundColor);
+            
+            // Draw value text at the center
             builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
             
             const Int32 fontSize = 16;
