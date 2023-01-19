@@ -57,9 +57,9 @@ body:
       required: true
   - type: input
     attributes:
-      label: YTMDesktop Version
-      description: "Which Version does your YTMDesktop application has?"
-      placeholder: v1.13.0
+      label: VoiceMeeter Version
+      description: "Which Version does your VoiceMeeter application has?"
+      placeholder: v3.0.1.4
     validations:
       required: true
   - type: dropdown
