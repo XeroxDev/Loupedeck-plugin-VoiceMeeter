@@ -111,6 +111,7 @@
     <Compile Include="Actions\VirtualInputEQGainAdjustment.cs" />
     <Compile Include="Enums\ErrorCode.cs" />
     <Compile Include="Extensions\ColorExtensions.cs" />
+    <Compile Include="Extensions\EnumExtensions.cs" />
     <Compile Include="Extensions\PluginExtensions.cs" />
     <Compile Include="Helper\ColorHelper.cs" />
     <Compile Include="Helper\DrawingHelper.cs" />

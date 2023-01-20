@@ -6,14 +6,24 @@
     using System.Reactive.Subjects;
     using System.Threading.Tasks;
 
+    using Extensions;
+
     using Helper;
+
     using Library.Voicemeeter;
+
     using Services;
 
     using SkiaSharp;
 
-    public class BooleanBaseCommand : PluginDynamicCommand
+    public class BooleanBaseCommand : PluginMultistateDynamicCommand
     {
+        private enum VMStates
+        {
+            Off,
+            On
+        }
+
         private Dictionary<Int32, Boolean[]> Actions { get; } = new Dictionary<Int32, Boolean[]>();
         private VoiceMeeterService VmService { get; }
         private Boolean IsMultiAction { get; set; }
@@ -28,6 +38,11 @@
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, SKColor? activeColor = null, SKColor? inactiveColor = null)
         {
+            foreach (var state in Enum.GetValues(typeof(VMStates)))
+            {
+                this.AddState(state.ToString(), $"If the action is {state}");
+            }
+
             this.IsRealClass = isRealClass;
             this.IsStrip = isStrip;
             this.ActiveColor = activeColor ?? ColorHelper.Active;
@@ -111,15 +126,18 @@
                     var hi = this.Actions[hiIndex];
                     for (var index = 1; index <= hi.Length; index++)
                     {
-                        var old = hi[index - 1];
-                        hi[index - 1] =
-                            (Int32)Remote.GetParameter(
-                                $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}{index}") ==
-                            1;
-                        if (this.Loaded && old != hi[index - 1])
+                        var oldValue = hi[index - 1];
+                        var newValue = (Int32)Remote.GetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}{index}") == 1;
+                        hi[index - 1] = newValue;
+
+                        if (!this.Loaded || oldValue == hi[index - 1])
                         {
-                            this.ActionImageChanged(GetActionParameterName(hiIndex, this.Command, index));
+                            continue;
                         }
+
+                        var actionParameter = GetActionParameterName(hiIndex, this.Command, index);
+                        this.SetCurrentState(actionParameter, newValue ? VMStates.On.ToInt() : VMStates.Off.ToInt());
+                        this.ActionImageChanged(actionParameter);
                     }
                 }
             }
@@ -128,14 +146,17 @@
                 var hi = this.Actions[0];
                 for (var index = 0; index < hi.Length; index++)
                 {
-                    var old = hi[index];
-                    hi[index] =
-                        (Int32)Remote.GetParameter(
-                            $"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}") == 1;
-                    if (this.Loaded && old != hi[index])
+                    var oldValue = hi[index];
+                    var newValue = (Int32)Remote.GetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}") == 1;
+                    hi[index] = newValue;
+                    if (!this.Loaded || oldValue == hi[index])
                     {
-                        this.ActionImageChanged(GetActionParameterName(index, this.Command));
+                        continue;
                     }
+
+                    var actionParameter = GetActionParameterName(index, this.Command);
+                    this.SetCurrentState(actionParameter, newValue ? VMStates.On.ToInt() : VMStates.Off.ToInt());
+                    this.ActionImageChanged(actionParameter);
                 }
             }
         }
@@ -180,33 +201,29 @@
                 return;
             }
 
+            var state = this.Actions[mainIndex][actionIndex] ? VMStates.Off : VMStates.On;
+
             Remote.SetParameter(
                 this.IsMultiAction
                     ? $"{(this.IsStrip ? "Strip" : "Bus")}[{mainIndex + this.Offset}].{this.Command}{action}"
                     : $"{(this.IsStrip ? "Strip" : "Bus")}[{action + this.Offset}].{this.Command}",
-                this.Actions[mainIndex][actionIndex] ? 0 : 1);
+                state.ToInt());
 
+            this.SetCurrentState(actionParameter, state.ToInt());
             this.ActionImageChanged(actionParameter);
         }
 
-        protected override String GetCommandDisplayName(String actionParameter, PluginImageSize imageSize)
+        protected override String GetCommandDisplayName(String actionParameter, Int32 state, PluginImageSize imageSize)
         {
             if (!this.IsRealClass || actionParameter == null)
             {
                 return null;
             }
 
-            this.GetButton(actionParameter, out var mainIndex, out var action, out var actionIndex);
-
-            if (mainIndex == -1 || action == -1)
-            {
-                return null;
-            }
-
-            return $"{this.DisplayName}\n" + (this.Actions[mainIndex][actionIndex] ? "On" : "Off");
+            return $"{this.DisplayName}\n{(VMStates.On.CompareInt(state) ? "On" : "Off")}";
         }
 
-        protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
+        protected override BitmapImage GetCommandImage(String actionParameter, Int32 state, PluginImageSize imageSize)
         {
             if (!this.IsRealClass)
             {
@@ -220,8 +237,6 @@
                 return null;
             }
 
-            var enabled = this.Actions[mainIndex][actionIndex];
-
             var actionString = this.IsMultiAction
                 ? $"{(this.IsStrip ? "Strip" : "Bus")}[{mainIndex + this.Offset}]"
                 : $"{(this.IsStrip ? "Strip" : "Bus")}[{action + this.Offset}]";
@@ -233,7 +248,7 @@
                     : $"{(this.IsStrip ? "Strip" : "Bus")} {action + 1 + this.Offset}";
             }
 
-            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, enabled ? this.ActiveColor : this.InactiveColor);
+            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, VMStates.On.CompareInt(state) ? this.ActiveColor : this.InactiveColor);
         }
 
         private void GetButton(String actionParameter, out Int32 mainIndex, out Int32 action, out Int32 actionIndex)
