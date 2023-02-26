@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## v3.0.0 (2023-02-26)
+
+### BREAKING CHANGE
+
+- Due to the structure change, all actions have to be added again. We're sorry for
+the inconvenience!
+
+### Feat
+
+- add multi-state possibility
+- remoddeled volume bar
+- add command name to the bottom of adjustment bars
+- add bus sel command
+- named adjustment commands with mute indicator
+- Load command support (#13)
+- Pan_x, Pan_y adjustment support (#11)
+
+### Fix
+
+- volume bar just shows 'Gain'
+- strips/buses recognition breaks due to faulty characters
+- Fix a bug that could cause InvalidOperationException in foreach statements. (#14)
+- give every icon the right number (#10)
+
+### Refactor
+
+- replace fontSize with cmdSize
+- update plugin to latest structure
+- change volume bar text to be at the top
+- replace .Drawings with SkiaSharp
+
 ## v2.0.1 (2022-05-16)
 
 ### Fix
