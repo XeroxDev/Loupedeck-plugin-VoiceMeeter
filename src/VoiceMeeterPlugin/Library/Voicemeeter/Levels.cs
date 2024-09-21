@@ -1,7 +1,5 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Library.Voicemeeter
 {
-    using System;
-    using System.Collections.Generic;
     using System.Reactive.Linq;
 
     /// <summary>
@@ -22,7 +20,7 @@
         };
 
         private readonly List<Channel> _channels;
-        private readonly List<IObserver<Single[]>> _observers = new List<IObserver<Single[]>>();
+        private readonly List<IObserver<Single[]>> _observers = new();
         private readonly IObservable<Int32> _timer;
         private IDisposable _timerSubscription;
 

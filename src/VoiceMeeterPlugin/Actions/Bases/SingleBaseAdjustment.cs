@@ -1,14 +1,14 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
 {
-    using System;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
-    using System.Threading.Tasks;
 
     using Extensions;
 
-    using Helper;
+    using Helpers;
+
     using Library.Voicemeeter;
+
     using Services;
 
     public class SingleBaseAdjustment : PluginDynamicAdjustment
@@ -16,7 +16,7 @@
         private AdjustmentItem[] Actions { get; set; }
         private VoiceMeeterService VmService { get; }
         private String Command { get; set; }
-        private Subject<Boolean> OnDestroy { get; } = new Subject<Boolean>();
+        private Subject<Boolean> OnDestroy { get; } = new();
         private Int32 Offset { get; set; }
         private Boolean IsStrip { get; }
         private Int32 MaxValue { get; }

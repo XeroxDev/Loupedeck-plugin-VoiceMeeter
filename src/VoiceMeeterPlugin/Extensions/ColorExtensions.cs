@@ -26,7 +26,6 @@ namespace Loupedeck.VoiceMeeterPlugin.Extensions
 
     public static class ColorExtensions
     {
-        public static SKColor ToSKColor(this BitmapColor color) => new SKColor(color.R, color.G, color.B, color.A);
-        public static BitmapColor ToBitmapColor(this SKColor color) => new BitmapColor(color.Red, color.Green, color.Blue, color.Alpha);
+        public static BitmapColor ToBitmapColor(this SKColor color) => new(color.Red, color.Green, color.Blue, color.Alpha);
     }
 }

@@ -22,12 +22,10 @@
 
 namespace Loupedeck.VoiceMeeterPlugin.Extensions
 {
-    using System;
-
     public static class EnumExtensions
     {
         public static Boolean CompareInt(this Enum value, int compareValue) => Convert.ToInt32(value) == compareValue;
-        
+
         public static Int32 ToInt(this Enum value) => Convert.ToInt32(value);
     }
 }

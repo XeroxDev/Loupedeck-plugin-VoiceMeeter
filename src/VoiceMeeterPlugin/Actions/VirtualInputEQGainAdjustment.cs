@@ -2,7 +2,8 @@
 {
     using Bases;
 
-    using Helper;
+    using Helpers;
+
     using Library.Voicemeeter;
 
     public class VirtualInputEqGain1Adjustment : SingleBaseAdjustment

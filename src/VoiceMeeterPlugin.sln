@@ -1,9 +1,9 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30128.74
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34408.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoiceMeeterPlugin", "VoiceMeeterPlugin\VoiceMeeterPlugin.csproj", "{49198B36-9914-4CEA-99C5-7A3858739650}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoiceMeeterPlugin", "VoiceMeeterPlugin\VoiceMeeterPlugin.csproj", "{CAB60883-9DB0-4C86-817C-A9F5E8B7389B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{49198B36-9914-4CEA-99C5-7A3858739650}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{49198B36-9914-4CEA-99C5-7A3858739650}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{49198B36-9914-4CEA-99C5-7A3858739650}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{49198B36-9914-4CEA-99C5-7A3858739650}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAB60883-9DB0-4C86-817C-A9F5E8B7389B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAB60883-9DB0-4C86-817C-A9F5E8B7389B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAB60883-9DB0-4C86-817C-A9F5E8B7389B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAB60883-9DB0-4C86-817C-A9F5E8B7389B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {ED803F16-9A0F-4AB9-A35F-E4CF13557060}
+		SolutionGuid = {0E15B716-1D2C-45CB-B731-E5A3A4741D44}
 	EndGlobalSection
 EndGlobal

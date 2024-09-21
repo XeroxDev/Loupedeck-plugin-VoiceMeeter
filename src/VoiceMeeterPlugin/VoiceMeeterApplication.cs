@@ -1,7 +1,5 @@
 namespace Loupedeck.VoiceMeeterPlugin
 {
-    using System;
-
     using Services;
 
     // This class can be used to connect the Loupedeck plugin to an application.

@@ -42,11 +42,8 @@ You can also join my discord [here](https://s.tswi.me/discord)
 
 # 6. How to contribute?
 
-Just fork the repository and create PR's, but we use
-[commitizen](https://commitizen-tools.github.io/commitizen/) to optimal release the plugin.
+Just fork the repository and create PR's.
 
-[commitizen](https://commitizen-tools.github.io/commitizen/) is following the [conventionalcommits](https://www.conventionalcommits.org) specification which follows
-the
-[angular commit guidelines](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines)
-
-[Here](https://kapeli.com/cheat_sheets/Conventional_Commits.docset/Contents/Resources/Documents/index) is a neat little cheatsheet for Conventional Commits
+> [!NOTE]
+> We're using [release-please](https://github.com/googleapis/release-please) to optimal release the library.
+> release-please is following the [conventionalcommits](https://www.conventionalcommits.org) specification.

@@ -1,14 +1,11 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
 {
-    using System;
-    using System.Collections.Generic;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
-    using System.Threading.Tasks;
 
     using Extensions;
 
-    using Helper;
+    using Helpers;
 
     using Library.Voicemeeter;
 
@@ -24,11 +21,11 @@
             On
         }
 
-        private Dictionary<Int32, Boolean[]> Actions { get; } = new Dictionary<Int32, Boolean[]>();
+        private Dictionary<Int32, Boolean[]> Actions { get; } = new();
         private VoiceMeeterService VmService { get; }
         private Boolean IsMultiAction { get; set; }
         private String Command { get; set; }
-        private Subject<Boolean> OnDestroy { get; } = new Subject<Boolean>();
+        private Subject<Boolean> OnDestroy { get; } = new();
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
@@ -230,7 +227,7 @@
                 return null;
             }
 
-            this.GetButton(actionParameter, out var mainIndex, out var action, out var actionIndex);
+            this.GetButton(actionParameter, out var mainIndex, out var action, out _);
 
             if (mainIndex == -1 || action == -1)
             {

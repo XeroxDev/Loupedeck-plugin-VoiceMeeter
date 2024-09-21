@@ -20,15 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Loupedeck.VoiceMeeterPlugin.Helper
+namespace Loupedeck.VoiceMeeterPlugin.Helpers
 {
     using SkiaSharp;
 
     public static class ColorHelper
     {
-        public static SKColor Inactive => new SKColor(59, 75, 85);
-        public static SKColor Active => new SKColor(82, 144, 112);
-        public static SKColor Danger => new SKColor(196, 78, 61);
-        public static SKColor SelActive => new SKColor(203, 174, 130);
+        public static SKColor Inactive => new(59, 75, 85);
+        public static SKColor Active => new(82, 144, 112);
+        public static SKColor Danger => new(196, 78, 61);
+        public static SKColor SelActive => new(203, 174, 130);
     }
 }

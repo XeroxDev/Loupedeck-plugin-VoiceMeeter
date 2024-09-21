@@ -1,0 +1,26 @@
+name: Draft Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft-release:
+    if: "!endsWith(github.event.head_commit.message, '[skip-ci]')"
+    runs-on: windows-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          path: './'
+          fetch-depth: 0
+      - name: release-please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          target-branch: main
