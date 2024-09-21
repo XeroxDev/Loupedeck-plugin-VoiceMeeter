@@ -1,10 +1,7 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Library.Voicemeeter
 {
-    using System;
-    using System.IO;
-    using System.Linq;
+    using System.Runtime.Versioning;
     using System.Text;
-    using System.Threading.Tasks;
 
     using Enums;
 
@@ -194,6 +191,7 @@
         /// <param name="voicemeeterType">The Voicemeeter program to run</param>
         /// <param name="application"></param>
         /// <returns>IDisposable class to dispose when finished with the remote.</returns>
+        [SupportedOSPlatform("windows")]
         public static async Task<IDisposable> Initialize(RunVoicemeeterParam voicemeeterType,
             ClientApplication application)
         {
@@ -205,6 +203,7 @@
                 const String key32 =
                     @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
                 const String uninstKey = "VB:Voicemeeter {17359A74-1236-5467}";
+                // if not windows, throw exception
                 var voicemeeter = Registry.GetValue($"{key}\\{uninstKey}", "UninstallString", null);
 
                 if (voicemeeter == null && Environment.Is64BitProcess)
@@ -219,7 +218,7 @@
                     return null;
                 }
 
-                var voicemeeterString = voicemeeter.ToString().Split('\\').Last();
+                var voicemeeterString = voicemeeter.ToString()?.Split('\\').Last();
                 var directoryName = Path.GetDirectoryName(voicemeeter.ToString());
                 if (directoryName == null)
                 {

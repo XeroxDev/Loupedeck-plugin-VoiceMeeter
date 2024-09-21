@@ -1,8 +1,5 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Library.Voicemeeter
 {
-    using System;
-    using System.Collections.Generic;
-
     public sealed class VoicemeeterClient : IDisposable, IObservable<Single>
     {
         public void Dispose()
@@ -17,7 +14,7 @@
             }
         }
 
-        private readonly List<IObserver<Single>> _observers = new List<IObserver<Single>>();
+        private readonly List<IObserver<Single>> _observers = new();
 
         public IDisposable Subscribe(IObserver<Single> observer)
         {

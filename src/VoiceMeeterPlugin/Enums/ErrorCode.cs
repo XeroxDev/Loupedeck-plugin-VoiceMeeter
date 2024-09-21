@@ -1,7 +1,5 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Enums
 {
-    using System;
-
     public enum ErrorCode : UInt16
     {
         None,

@@ -24,7 +24,7 @@ namespace Loupedeck.VoiceMeeterPlugin.Actions
 {
     using Bases;
 
-    using Helper;
+    using Helpers;
 
     public class BusSelCommand : BooleanBaseCommand
     {

@@ -1,7 +1,5 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Library.Voicemeeter
 {
-    using System;
-
     public enum RunVoicemeeterParam
     {
         None = 0,

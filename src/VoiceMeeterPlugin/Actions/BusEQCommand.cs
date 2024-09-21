@@ -2,7 +2,7 @@
 {
     using Bases;
 
-    using Helper;
+    using Helpers;
 
     public class BusEqCommand : BooleanBaseCommand
     {

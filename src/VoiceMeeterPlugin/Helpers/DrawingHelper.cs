@@ -1,6 +1,5 @@
-﻿namespace Loupedeck.VoiceMeeterPlugin.Helper
+﻿namespace Loupedeck.VoiceMeeterPlugin.Helpers
 {
-    using System;
     using System.Globalization;
 
     using SkiaSharp;
@@ -88,12 +87,7 @@
             var info = new SKImageInfo(width, height);
             var surface = SKSurface.Create(info);
             var canvas = surface.Canvas;
-            var paint = new SKPaint
-            {
-                Color = brushColor,
-                IsAntialias = true,
-                Typeface = font
-            };
+            var paint = new SKPaint { Color = brushColor, IsAntialias = true, Typeface = font };
 
             // Calculate the dimensions of the rounded rectangle outline
             var rect = new SKRect(5, 20, width - 5, height - 20);
@@ -108,6 +102,7 @@
                 {
                     break;
                 }
+
                 fontSize--;
             }
 
@@ -142,21 +137,21 @@
             var xCenter = dim / 2 - width / 2;
             var yCenter = dim / 2 + height / 2;
             var builder = new BitmapBuilder(dim, dim);
-            
+
             // Reset to black
             builder.Clear(BitmapColor.Black);
-            
+
             // Draw volume bar and border
             builder.DrawRectangle(xCenter, yCenter, width, -height, backgroundColor);
             builder.FillRectangle(xCenter, yCenter, width, -calculatedHeight, backgroundColor);
-            
+
             // Draw value text at the center
             builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
-            
+
             const Int32 fontSize = 16;
 
             var cmdSize = GetFontSize(fontSize, cmd, dim);
-            
+
             // Draw cmd text at the bottom
             builder.DrawText(cmd, 0, dim / 2 - cmdSize / 2, dim, dim, foregroundColor, cmdSize, 0, 0);
 
@@ -177,11 +172,7 @@
         private static Int32 GetFontSize(Int32 fontSize, String text, Int32 dim)
         {
             // create a SKPaint object for measuring the text
-            var paint = new SKPaint
-            {
-                TextSize = fontSize,
-                IsAntialias = true
-            };
+            var paint = new SKPaint { TextSize = fontSize, IsAntialias = true };
 
             // measure the size of the text
             var textBounds = new SKRect();
@@ -194,9 +185,9 @@
                 paint.TextSize = fontSize;
                 paint.MeasureText(text, ref textBounds);
             }
-            
+
             return fontSize;
-        } 
+        }
 
         public static Int32 GetDimension(this PluginImageSize size) => size == PluginImageSize.Width60 ? 50 : 80;
     }

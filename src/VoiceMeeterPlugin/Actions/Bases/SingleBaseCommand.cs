@@ -1,20 +1,12 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
 {
-    using System;
+    using Helpers;
 
-    using Helper;
-
-    public class SingleBaseCommand : PluginDynamicCommand
+    public class SingleBaseCommand(String actionName, String description, String groupName, Action action)
+        : PluginDynamicCommand(actionName, description, groupName)
     {
-        private String ActionName { get; }
-        private Action Action { get; }
-
-        public SingleBaseCommand(String actionName, String description, String groupName, Action action) : base(
-            actionName, description, groupName)
-        {
-            this.ActionName = actionName;
-            this.Action = action;
-        }
+        private String ActionName { get; } = actionName;
+        private Action Action { get; } = action;
 
         protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
             => DrawingHelper.DrawDefaultImage(this.ActionName, "", ColorHelper.Inactive);

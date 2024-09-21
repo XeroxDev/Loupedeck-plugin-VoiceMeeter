@@ -1,6 +1,5 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Library.Voicemeeter
 {
-    using System;
     using System.Runtime.InteropServices;
 
     internal static class Wrapper

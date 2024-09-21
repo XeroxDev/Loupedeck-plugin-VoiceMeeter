@@ -1,18 +1,14 @@
 ﻿namespace Loupedeck.VoiceMeeterPlugin.Extensions
 {
-    using System;
     using System.Text.RegularExpressions;
 
     using Enums;
 
-    public static class PluginExtensions
+    public static partial class PluginExtensions
     {
         public static void SetStatus(this Plugin plugin, PluginStatus status, ErrorCode errorCode = ErrorCode.None)
         {
-            if (plugin == null)
-            {
-                throw new ArgumentNullException(nameof(plugin));
-            }
+            ArgumentNullException.ThrowIfNull(plugin);
 
             if (status == PluginStatus.Error)
             {
@@ -22,8 +18,7 @@
                 }
             }
 
-            var message = Regex.Replace(errorCode.ToString(), "[a-z][A-Z]",
-                m => $"{m.Value[0]} {Char.ToLower(m.Value[1])}");
+            var message = LettersRegex().Replace(errorCode.ToString(), m => $"{m.Value[0]} {Char.ToLower(m.Value[1])}");
 
             if (plugin.PluginStatus.Status == status && plugin.PluginStatus.Message == message)
             {
@@ -33,13 +28,14 @@
             plugin.OnPluginStatusChanged(
                 status,
                 message,
-                $"https://help.xeroxdev.de/en/loupedeck/voicemeeter/error/{(UInt16)errorCode}"
+                $"https://help.xeroxdev.de/en/loupedeck/voicemeeter/error/{(UInt16)errorCode}",
+                $"Error {(UInt16)errorCode}"
             );
         }
 
-        public static void ResetStatus(this Plugin plugin)
-        {
-            plugin.SetStatus(PluginStatus.Normal);
-        }
+        public static void ResetStatus(this Plugin plugin) => plugin.SetStatus(PluginStatus.Normal);
+
+        [GeneratedRegex("[a-z][A-Z]")]
+        private static partial Regex LettersRegex();
     }
 }
