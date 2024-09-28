@@ -75,13 +75,11 @@
             return builder;
         }
 
-        public static BitmapImage DrawDefaultImage(String innerText, String outerText, SKColor brushColor)
+        public static BitmapImage DrawDefaultImage(String innerText, String outerText, SKColor brushColor, Int32 width = 80, Int32 height = 80)
         {
             // Set the dimensions and font
-            int width = 80;
-            int height = 80;
             SKTypeface font = SKTypeface.FromFamilyName("Arial", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
-            int fontSize = 20;
+            var fontSize = 20;
 
             // Create the canvas and paint
             var info = new SKImageInfo(width, height);
@@ -116,7 +114,7 @@
             // Draw the inner text centered within the rounded rectangle outline
             paint.TextAlign = SKTextAlign.Center;
             paint.TextSize = fontSize;
-            canvas.DrawText(innerText, rect.MidX, rect.MidY - ((paint.FontMetrics.Descent + paint.FontMetrics.Ascent) / 2), paint);
+            canvas.DrawText(innerText, rect.MidX, rect.MidY - (paint.FontMetrics.Descent + paint.FontMetrics.Ascent) / 2, paint);
 
             // Save the image to memory and return the memory streams
             var image = surface.Snapshot();
@@ -131,8 +129,8 @@
             // Prepare variables
             var dim = imageSize.GetDimension();
             var percentage = (currentValue - minValue) / (maxValue - minValue) * 100;
-            var height = (Int32)(dim * 1.0);
-            var width = (Int32)(dim * 0.7);
+            var height = (Int32)(dim * 0.9);
+            var width = (Int32)(dim * 0.6);
             var calculatedHeight = (Int32)(height * percentage / 100);
             var xCenter = dim / 2 - width / 2;
             var yCenter = dim / 2 + height / 2;
@@ -189,6 +187,13 @@
             return fontSize;
         }
 
-        public static Int32 GetDimension(this PluginImageSize size) => size == PluginImageSize.Width60 ? 50 : 80;
+        private static Int32 GetDimension(this PluginImageSize size) =>
+            size switch
+            {
+                PluginImageSize.Width60 => 50,
+                PluginImageSize.Width90 => 80,
+                PluginImageSize.Width116 => 116,
+                _ => 80,
+            };
     }
 }
