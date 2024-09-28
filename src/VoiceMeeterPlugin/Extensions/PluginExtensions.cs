@@ -31,6 +31,12 @@
                 $"https://help.xeroxdev.de/en/loupedeck/voicemeeter/error/{(UInt16)errorCode}",
                 $"Error {(UInt16)errorCode}"
             );
+            
+            // reset the status after 5 seconds
+            if (status == PluginStatus.Error)
+            {
+                Task.Delay(5000).ContinueWith(_ => plugin.ResetStatus());
+            }
         }
 
         public static void ResetStatus(this Plugin plugin) => plugin.SetStatus(PluginStatus.Normal);

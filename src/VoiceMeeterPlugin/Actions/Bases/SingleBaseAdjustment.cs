@@ -191,6 +191,12 @@
             return DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, value, this.MinValue, this.MaxValue, this.ScaleFactor, this.Command, name);
         }
 
+        protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize) => this.GetAdjustmentImage(actionParameter, imageSize);
+
+        protected override Double? GetAdjustmentMinValue(String actionParameter) => this.MinValue;
+
+        protected override Double? GetAdjustmentMaxValue(String actionParameter) => this.MaxValue;
+
         private Int32 GetButton(String actionParameter)
         {
             var number = actionParameter.Replace("VM-Strip", "").Replace($"-{this.Command}", "");
