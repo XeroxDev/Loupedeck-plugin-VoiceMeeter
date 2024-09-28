@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v3.0.0...v4.0.0) (2024-09-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* migration to v6 ([#24](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/issues/24))
+
+### Features
+
+* add raw commands and adjustments ([#27](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/issues/27)) ([676b152](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/676b1525b5835a775441cab64e3a161dc6a07087))
+* migration to v6 ([#24](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/issues/24)) ([56b05fd](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/56b05fd36c396e538b7b496fc84528b8e04dd60a))
+
 ## v3.0.0 (2023-02-26)
 
 ### BREAKING CHANGE
