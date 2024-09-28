@@ -9,7 +9,8 @@
       "prerelease": false,
       "include-component-in-tag": false,
       "extra-files": [
-        "src/VoiceMeeterPlugin/VoiceMeeterPlugin.csproj"
+        "src/VoiceMeeterPlugin/VoiceMeeterPlugin.csproj",
+        "src/VoiceMeeterPlugin/metadata/LoupedeckPackage.yaml"
       ]
     }
   },
