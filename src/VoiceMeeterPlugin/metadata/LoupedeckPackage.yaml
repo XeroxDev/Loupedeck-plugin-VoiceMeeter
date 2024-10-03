@@ -11,7 +11,7 @@ supportedDevices:
   - LoupedeckCtFamily
 pluginCapabilities:
   - HasApplication
-minimumLoupedeckVersion: 6
+minimumLoupedeckVersion: 6.0.0
 license: MIT
 licenseUrl: https://opensource.org/licenses/MIT
 supportPageUrl: https://s.tswi.me/discord
