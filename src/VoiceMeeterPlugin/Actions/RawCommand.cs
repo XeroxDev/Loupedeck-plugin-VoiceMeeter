@@ -65,7 +65,7 @@ public class RawCommand : MultistateActionEditorCommand
     {
         this.VmService.Parameters
             .TakeUntil(this.OnDestroy)
-            .Subscribe(_ => this.AdjustmentValueChanged());
+            .Subscribe(_ => this.ActionImageChanged());
 
         return base.OnLoad();
     }
