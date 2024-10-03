@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.1](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v4.0.0...v4.0.1) (2024-10-03)
+
+
+### Bug Fixes
+
+* raw command doesn't update from outside sources ([72cb55f](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/72cb55fa810c037d6c1ad2af794e6a4e15665c9a))
+
 ## [4.0.0](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v3.0.0...v4.0.0) (2024-09-28)
 
 
