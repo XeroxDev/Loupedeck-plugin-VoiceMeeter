@@ -105,7 +105,7 @@ public class LevelsCommand : ActionEditorCommand
             return null;
         }
 
-        var (name, channel, bgColor, fgColor) = parameters;
+        var (name, channel, _, _) = parameters;
 
         this.VmService.Levels.AddChannel(channel);
 
@@ -158,7 +158,16 @@ public class LevelsCommand : ActionEditorCommand
         }
 
         currentValue = (Single)Math.Round(currentValue, 10);
-
+        
+        if (currentValue < 0)
+        {
+            currentValue = 0;
+        }
+        
+        if (currentValue > 1)
+        {
+            currentValue = 1;
+        }
 
         return DrawingHelper.DrawVolumeBar(PluginImageSize.Width60, bgColor.ToBitmapColor(), fgColor.ToBitmapColor(), currentValue, 0, 1, 1, "", name, false);
     }

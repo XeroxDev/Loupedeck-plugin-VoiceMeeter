@@ -23,6 +23,7 @@
         private readonly List<IObserver<Single[]>> _observers = [];
         private readonly IObservable<Int32> _timer;
         private IDisposable _timerSubscription;
+        private List<Single> _oldValues;
 
         public Levels(Int32 milliseconds = 20)
         {
@@ -51,7 +52,14 @@
                 }
                 var values = new List<Single>(this._channels.Count);
                 values.AddRange(this._channels.Select(channel => Remote.GetLevel(channel.LevelType, channel.ChannelNumber)));
-
+                
+                // This is maybe to harsh, but this will prevent the same values to be sent multiple times, which is good for performance.
+                if (this._oldValues != null && (this._oldValues.SequenceEqual(values) || this._oldValues.Sum() == values.Sum()))
+                {
+                    return;
+                } 
+                
+                this._oldValues = values;
                 this.Notify(values.ToArray());
             });
 
