@@ -14,7 +14,7 @@
             }
         }
 
-        private readonly List<IObserver<Single>> _observers = new();
+        private readonly List<IObserver<Single>> _observers = [];
 
         public IDisposable Subscribe(IObserver<Single> observer)
         {
@@ -34,22 +34,13 @@
             }
         }
 
-        private sealed class Unsubscriber : IDisposable
+        private sealed class Unsubscriber(List<IObserver<Single>> observers, IObserver<Single> observer) : IDisposable
         {
-            private readonly List<IObserver<Single>> _observers;
-            private readonly IObserver<Single> _observer;
-
-            public Unsubscriber(List<IObserver<Single>> observers, IObserver<Single> observer)
-            {
-                this._observers = observers;
-                this._observer = observer;
-            }
-
             public void Dispose()
             {
-                if (this._observer != null && this._observers.Contains(this._observer))
+                if (observer != null && observers.Contains(observer))
                 {
-                    this._observers.Remove(this._observer);
+                    observers.Remove(observer);
                 }
             }
         }

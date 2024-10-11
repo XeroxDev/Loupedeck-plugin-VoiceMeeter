@@ -20,25 +20,37 @@
         };
 
         private readonly List<Channel> _channels;
-        private readonly List<IObserver<Single[]>> _observers = new();
+        private readonly List<IObserver<Single[]>> _observers = [];
         private readonly IObservable<Int32> _timer;
         private IDisposable _timerSubscription;
 
-        public Levels(Channel[] channels, Int32 milliseconds = 20)
+        public Levels(Int32 milliseconds = 20)
         {
-            this._channels = new List<Channel>(channels);
+            this._channels = [];
             this._timer = Observable.Interval(TimeSpan.FromMilliseconds(milliseconds)).Select(_ => 1);
             this.Watch();
+        }
+        
+        public void AddChannel(Channel channel)
+        {
+            // first check if there's already a channel with the same LevelType and ChannelNumber
+            if (this._channels.Any(c => c.LevelType == channel.LevelType && c.ChannelNumber == channel.ChannelNumber))
+            {
+                return;
+            }
+            
+            this._channels.Add(channel);
         }
 
         private void Watch() =>
             this._timerSubscription = this._timer.Subscribe(_ =>
             {
-                var values = new List<Single>(this._channels.Count);
-                foreach (var channel in this._channels)
+                if (this._channels.Count == 0)
                 {
-                    values.Add(Remote.GetLevel(channel.LevelType, channel.ChannelNumber));
+                    return;
                 }
+                var values = new List<Single>(this._channels.Count);
+                values.AddRange(this._channels.Select(channel => Remote.GetLevel(channel.LevelType, channel.ChannelNumber)));
 
                 this.Notify(values.ToArray());
             });
@@ -63,22 +75,13 @@
 
         public void Dispose() => this._timerSubscription?.Dispose();
 
-        private sealed class Unsubscriber : IDisposable
+        private sealed class Unsubscriber(List<IObserver<Single[]>> observers, IObserver<Single[]> observer) : IDisposable
         {
-            private readonly List<IObserver<Single[]>> _observers;
-            private readonly IObserver<Single[]> _observer;
-
-            public Unsubscriber(List<IObserver<Single[]>> observers, IObserver<Single[]> observer)
-            {
-                this._observers = observers;
-                this._observer = observer;
-            }
-
             public void Dispose()
             {
-                if (this._observer != null && this._observers.Contains(this._observer))
+                if (observer != null && observers.Contains(observer))
                 {
-                    this._observers.Remove(this._observer);
+                    observers.Remove(observer);
                 }
             }
         }

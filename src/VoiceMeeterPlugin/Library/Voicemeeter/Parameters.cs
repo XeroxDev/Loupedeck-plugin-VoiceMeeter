@@ -13,7 +13,7 @@
     /// </summary>
     public class Parameters : IDisposable, IObservable<Int32>
     {
-        private readonly List<IObserver<Int32>> _observers = new();
+        private readonly List<IObserver<Int32>> _observers = [];
         private readonly IObservable<Int32> _timer;
         private IDisposable _timerSubscription;
 
@@ -59,22 +59,13 @@
 
         public void Dispose() => this._timerSubscription?.Dispose();
 
-        private sealed class Unsubscriber : IDisposable
+        private sealed class Unsubscriber(List<IObserver<Int32>> observers, IObserver<Int32> observer) : IDisposable
         {
-            private readonly List<IObserver<Int32>> _observers;
-            private readonly IObserver<Int32> _observer;
-
-            public Unsubscriber(List<IObserver<Int32>> observers, IObserver<Int32> observer)
-            {
-                this._observers = observers;
-                this._observer = observer;
-            }
-
             public void Dispose()
             {
-                if (this._observer != null && this._observers.Contains(this._observer))
+                if (observer != null && observers.Contains(observer))
                 {
-                    this._observers.Remove(this._observer);
+                    observers.Remove(observer);
                 }
             }
         }

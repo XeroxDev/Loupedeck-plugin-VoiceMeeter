@@ -124,7 +124,7 @@
         }
 
         public static BitmapImage DrawVolumeBar(PluginImageSize imageSize, BitmapColor backgroundColor, BitmapColor foregroundColor, Single currentValue, Int32 minValue, Int32 maxValue,
-            Int32 scaleFactor, String cmd, String name = "")
+            Int32 scaleFactor, String cmd, String name = "", Boolean drawValue = true)
         {
             // Prepare variables
             var dim = imageSize.GetDimension();
@@ -144,7 +144,10 @@
             builder.FillRectangle(xCenter, yCenter, width, -calculatedHeight, backgroundColor);
 
             // Draw value text at the center
-            builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
+            if (drawValue)
+            {
+                builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
+            }
 
             const Int32 fontSize = 16;
 
