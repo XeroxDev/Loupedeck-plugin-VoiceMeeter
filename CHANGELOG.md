@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v4.0.1...v4.1.0) (2025-03-25)
+
+
+### Features
+
+* add level meters display ([dd016ef](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/dd016ef4a85bab7c459b566ec7abdac6b90f12ba))
+
+
+### Bug Fixes
+
+* actions don't get loaded due to api changes ([a9de069](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/a9de0693930b7d4339fa518e7f2623b427f53efe))
+
+
+### Performance Improvements
+
+* optimize performance for image drawing and levels update ([0dbcfcb](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/0dbcfcbe803f3b28421c4c549130eed656f5c708))
+
 ## [4.0.1](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v4.0.0...v4.0.1) (2024-10-03)
 
 
