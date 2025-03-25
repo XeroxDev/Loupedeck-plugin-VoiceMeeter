@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   draft-release:
-    if: "!endsWith(github.event.head_commit.message, '[skip-ci]')"
+    if: "!contains(github.event.head_commit.message, 'chore(main): release')"
     runs-on: windows-latest
     steps:
       - name: Check out Git repository
