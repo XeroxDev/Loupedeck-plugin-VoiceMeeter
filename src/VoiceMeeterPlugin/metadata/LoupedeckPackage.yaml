@@ -3,7 +3,7 @@ name: VoiceMeeter
 displayName: VoiceMeeter
 description: Control your VoiceMeeter audio mixer with your Loupedeck device.
 pluginFileName: VoiceMeeterPlugin.dll
-version: 4.1.0
+version: 5.0.0
 author: XeroxDev
 copyright: Copyright © 2022-2024 Dominic Ris. All rights reserved.
 pluginFolderWin: .
