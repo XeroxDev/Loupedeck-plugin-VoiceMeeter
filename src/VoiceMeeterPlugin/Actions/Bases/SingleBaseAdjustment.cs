@@ -61,8 +61,7 @@
                 this.AddParameter(
                     GetActionParameterName(hi, cmd),
                     this.DisplayName,
-                    $"{groupName} ({hi + 1 + this.Offset})",
-                    "Input"
+                    $"{groupName} ({hi + 1 + this.Offset})"
                 );
             }
 
