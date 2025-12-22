@@ -79,7 +79,7 @@ jobs:
           Write-Host "Validating package contents..."
           
           # Extract the .lplug4 (which is a zip file) to a temp directory
-          $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\lplug4_validation_$(Get-Random)"
+          $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\lplug4_validation_$([Guid]::NewGuid().ToString('N'))"
           Expand-Archive -Path $pluginFile -DestinationPath $tempDir
           
           # Check for System*.dll and Microsoft*.dll files
