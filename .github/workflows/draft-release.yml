@@ -106,7 +106,6 @@ jobs:
           if-no-files-found: error
 
       - name: Upload to GitHub Release
-        if: needs.draft-release.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
