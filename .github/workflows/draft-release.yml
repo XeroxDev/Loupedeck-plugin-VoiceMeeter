@@ -13,6 +13,10 @@ jobs:
   draft-release:
     if: "!contains(github.event.head_commit.message, 'chore(main): release')"
     runs-on: windows-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -24,3 +28,91 @@ jobs:
         id: release
         with:
           target-branch: main
+
+  build-and-package:
+    needs: draft-release
+    if: needs.draft-release.outputs.release_created == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Restore dependencies
+        run: dotnet restore src/VoiceMeeterPlugin.sln
+
+      - name: Build Release
+        run: dotnet build src/VoiceMeeterPlugin.sln -c Release --no-restore
+
+      - name: Pack plugin
+        shell: pwsh
+        run: |
+          $version = "${{ needs.draft-release.outputs.version }}"
+          $pluginName = "VoiceMeeterPlugin"
+          $outputFile = "${pluginName}_${version}.lplug4"
+          $buildOutput = "src/VoiceMeeterPlugin/bin/Release"
+          
+          Write-Host "Packing plugin: $outputFile"
+          dotnet tool run logiplugintool pack $buildOutput $outputFile
+          
+          Write-Host "Plugin packed successfully: $outputFile"
+          echo "PLUGIN_FILE=$outputFile" >> $env:GITHUB_ENV
+
+      - name: Verify plugin package
+        shell: pwsh
+        run: |
+          $pluginFile = $env:PLUGIN_FILE
+          Write-Host "Verifying plugin: $pluginFile"
+          dotnet tool run logiplugintool verify $pluginFile
+
+      - name: Validate no framework DLLs in package
+        shell: pwsh
+        run: |
+          $pluginFile = $env:PLUGIN_FILE
+          Write-Host "Validating package contents..."
+          
+          # Extract the .lplug4 (which is a zip file) to a temp directory
+          $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\lplug4_validation_$(Get-Random)"
+          Expand-Archive -Path $pluginFile -DestinationPath $tempDir
+          
+          # Check for System*.dll and Microsoft*.dll files
+          $systemDlls = Get-ChildItem -Path $tempDir -Filter "System*.dll" -Recurse
+          $microsoftDlls = Get-ChildItem -Path $tempDir -Filter "Microsoft*.dll" -Recurse
+          
+          # Cleanup temp directory
+          Remove-Item -Path $tempDir -Recurse -Force
+          
+          if ($systemDlls.Count -gt 0 -or $microsoftDlls.Count -gt 0) {
+            Write-Host "ERROR: Framework DLLs found in package:"
+            $systemDlls | ForEach-Object { Write-Host "  - $($_.FullName)" }
+            $microsoftDlls | ForEach-Object { Write-Host "  - $($_.FullName)" }
+            exit 1
+          }
+          
+          Write-Host "Validation passed: No framework DLLs found in package"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PLUGIN_FILE }}
+          path: ${{ env.PLUGIN_FILE }}
+          if-no-files-found: error
+
+      - name: Upload to GitHub Release
+        if: needs.draft-release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $pluginFile = $env:PLUGIN_FILE
+          $tagName = "${{ needs.draft-release.outputs.tag_name }}"
+          
+          Write-Host "Uploading $pluginFile to release $tagName"
+          gh release upload $tagName $pluginFile --clobber

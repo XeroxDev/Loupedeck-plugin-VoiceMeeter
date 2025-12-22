@@ -10,7 +10,6 @@
     <WarningLevel>4</WarningLevel>
 
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <PluginApiDir Condition="$(OS) == 'Windows_NT'">C:\Program Files\Logi\LogiPluginService\</PluginApiDir>
     <PluginApiDir Condition="$(OS) != 'Windows_NT'">/Applications/Utilities/LogiPluginService.app/Contents/MonoBundle/</PluginApiDir>
@@ -60,6 +59,15 @@
     <Exec   Condition="$(OS) != 'Windows_NT'" Command="rm -f $(PluginDir)$(ProjectName).link" />
 
     <RemoveDir Directories="$(OutputPath)metadata" />
+  </Target>
+
+  <Target Name="ValidateNoFrameworkDlls" AfterTargets="Build">
+    <ItemGroup>
+      <SystemDlls Include="$(OutputPath)System*.dll" />
+      <MicrosoftDlls Include="$(OutputPath)Microsoft*.dll" />
+    </ItemGroup>
+    <Error Condition="'@(SystemDlls)' != '' OR '@(MicrosoftDlls)' != ''" 
+           Text="Build failed: Framework DLLs detected in output directory. Found: @(SystemDlls);@(MicrosoftDlls). Remove CopyLocalLockFileAssemblies or exclude these assemblies." />
   </Target>
 
 </Project>

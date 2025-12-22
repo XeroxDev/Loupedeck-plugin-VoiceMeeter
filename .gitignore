@@ -400,3 +400,6 @@ FodyWeavers.xsd
 .idea/
 !.idea/codeStyles
 !.idea/runConfigurations
+
+# Loupedeck plugin packages
+*.lplug4

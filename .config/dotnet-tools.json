@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "logiplugintool": {
+      "version": "6.1.4.22672",
+      "commands": [
+        "logiplugintool"
+      ],
+      "rollForward": false
+    }
+  }
+}
