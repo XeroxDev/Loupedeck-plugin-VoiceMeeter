@@ -11,10 +11,12 @@
         public Parameters Parameters { get; set; }
         public Levels Levels { get; set; }
         public Boolean Connected { get; set; }
+        private IDisposable RemoteSession { get; set; }
 
         public async Task StartService(ClientApplication application)
         {
-            await Remote.Initialize(RunVoicemeeterParam.None, application);
+            this.RemoteSession?.Dispose();
+            this.RemoteSession = await Remote.Initialize(RunVoicemeeterParam.None, application);
 
             this.Connected = true;
             this.Parameters = new Parameters();
@@ -30,6 +32,9 @@
 
             this.Levels?.Dispose();
             this.Levels = null;
+
+            this.RemoteSession?.Dispose();
+            this.RemoteSession = null;
         }
     }
 }
