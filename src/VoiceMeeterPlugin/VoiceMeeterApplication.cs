@@ -8,8 +8,18 @@ namespace Loupedeck.VoiceMeeterPlugin
     {
         public VoiceMeeterApplication() => VoiceMeeterService.Instance.StartService(this).GetAwaiter().GetResult();
 
+        private static readonly String[] SupportedProcessNames =
+        [
+            "voicemeeter",
+            "voicemeeter_x64",
+            "voicemeeterpro",
+            "voicemeeterpro_x64",
+            "voicemeeter8",
+            "voicemeeter8x64",
+        ];
+
         // This method can be used to link the plugin to a Windows application.
-        protected override String GetProcessName() => "VoiceMeeter";
+        protected override String GetProcessName() => "voicemeeter";
 
         // This method can be used to link the plugin to a macOS application.
         protected override String GetBundleName() => "";
@@ -18,6 +28,6 @@ namespace Loupedeck.VoiceMeeterPlugin
         public override ClientApplicationStatus GetApplicationStatus() => ClientApplicationStatus.Unknown;
 
         protected override Boolean IsProcessNameSupported(String processName) =>
-            processName.ContainsNoCase("VB-AUDIO Virtual Audi Device") || processName.ContainsNoCase("VoiceMeeter");
+            SupportedProcessNames.Any(processName.ContainsNoCase);
     }
 }

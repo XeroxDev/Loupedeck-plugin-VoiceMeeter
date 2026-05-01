@@ -143,7 +143,7 @@
         /// </summary>
         /// <param name="configurationFileName">Full path to file</param>
         public static void Save(String configurationFileName) =>
-            SetTextParameter(VoicemeeterCommand.Load, configurationFileName);
+            SetTextParameter(VoicemeeterCommand.Save, configurationFileName);
 
         #endregion
 
