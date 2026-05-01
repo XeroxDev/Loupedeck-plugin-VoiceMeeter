@@ -2,7 +2,7 @@
 {
     using Helpers;
 
-    public class SingleBaseCommand(String actionName, String description, String groupName, Action action)
+    public abstract class SingleBaseCommand(String actionName, String description, String groupName, Action action)
         : PluginDynamicCommand(actionName, description, groupName)
     {
         private String ActionName { get; } = actionName;

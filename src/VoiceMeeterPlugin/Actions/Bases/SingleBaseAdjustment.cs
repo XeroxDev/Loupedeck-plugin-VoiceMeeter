@@ -11,7 +11,7 @@
 
     using Services;
 
-    public class SingleBaseAdjustment : PluginDynamicAdjustment
+    public abstract class SingleBaseAdjustment : PluginDynamicAdjustment
     {
         private AdjustmentItem[] Actions { get; set; }
         private VoiceMeeterService VmService { get; }

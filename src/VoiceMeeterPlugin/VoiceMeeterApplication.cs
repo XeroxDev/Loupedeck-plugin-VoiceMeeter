@@ -6,10 +6,10 @@ namespace Loupedeck.VoiceMeeterPlugin
 
     public class VoiceMeeterApplication : ClientApplication
     {
-        public VoiceMeeterApplication() => VoiceMeeterService.Instance.StartService(this).ConfigureAwait(true);
+        public VoiceMeeterApplication() => VoiceMeeterService.Instance.StartService(this).GetAwaiter().GetResult();
 
         // This method can be used to link the plugin to a Windows application.
-        protected override String GetProcessName() => "";
+        protected override String GetProcessName() => "VoiceMeeter";
 
         // This method can be used to link the plugin to a macOS application.
         protected override String GetBundleName() => "";

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Logi Plugin Service": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Logi\\LogiPluginService\\LogiPluginService.exe",
+      "workingDirectory": "C:\\Program Files\\Logi\\LogiPluginService",
+      "commandLineArgs": "",
+      "environmentVariables": {}
+    }
+  }
+}

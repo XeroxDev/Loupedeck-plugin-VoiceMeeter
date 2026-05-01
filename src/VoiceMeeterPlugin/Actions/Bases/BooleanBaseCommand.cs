@@ -13,7 +13,7 @@
 
     using SkiaSharp;
 
-    public class BooleanBaseCommand : PluginMultistateDynamicCommand
+    public abstract class BooleanBaseCommand : PluginMultistateDynamicCommand
     {
         private enum VMStates
         {

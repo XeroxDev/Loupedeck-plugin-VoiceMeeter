@@ -16,6 +16,7 @@
         private readonly List<IObserver<Int32>> _observers = [];
         private readonly IObservable<Int32> _timer;
         private IDisposable _timerSubscription;
+        private Boolean _disposed;
 
         public Parameters(Int32 milliseconds = 20)
         {
@@ -26,6 +27,11 @@
         private void Watch() =>
             this._timerSubscription = this._timer.Subscribe(_ =>
             {
+                if (this._disposed)
+                {
+                    return;
+                }
+
                 var response = Remote.IsParametersDirty();
                 if (response > 0)
                 {
@@ -57,7 +63,11 @@
             }
         }
 
-        public void Dispose() => this._timerSubscription?.Dispose();
+        public void Dispose()
+        {
+            this._disposed = true;
+            this._timerSubscription?.Dispose();
+        }
 
         private sealed class Unsubscriber(List<IObserver<Int32>> observers, IObserver<Int32> observer) : IDisposable
         {

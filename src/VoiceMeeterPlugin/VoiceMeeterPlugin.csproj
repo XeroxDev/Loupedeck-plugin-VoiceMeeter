@@ -44,8 +44,9 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Condition="$(OS) == 'Windows_NT'" Command="echo $(OutputPath) &gt; &quot;$(PluginDir)$(ProjectName).link&quot;" />
-    <Exec Condition="$(OS) != 'Windows_NT'" Command="echo $(OutputPath) &gt; $(PluginDir)$(ProjectName).link" />
+    <MakeDir Directories="$(PluginDir)" />
+    <Exec Condition="$(OS) == 'Windows_NT'" Command="echo $(TargetDir) &gt; &quot;$(PluginDir)$(ProjectName).link&quot;" />
+    <Exec Condition="$(OS) != 'Windows_NT'" Command="echo $(TargetDir) &gt; $(PluginDir)$(ProjectName).link" />
   </Target>
 
   <Target Name="CopyMetadata" AfterTargets="PostBuildEvent">

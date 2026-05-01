@@ -3,6 +3,7 @@ namespace Loupedeck.VoiceMeeterPlugin
     using Helpers;
 
     using Library.Voicemeeter;
+    using Services;
 
     // This class contains the plugin-level logic of the Loupedeck plugin.
 
@@ -12,7 +13,7 @@ namespace Loupedeck.VoiceMeeterPlugin
         public override Boolean UsesApplicationApiOnly => true;
 
         // Gets a value indicating whether this is a Universal plugin or an Application plugin.
-        public override Boolean HasNoApplication => true;
+        public override Boolean HasNoApplication => false;
 
         // Initializes a new instance of the plugin class.
         public VoiceMeeterPlugin()
@@ -34,6 +35,7 @@ namespace Loupedeck.VoiceMeeterPlugin
         {
             try
             {
+                VoiceMeeterService.Instance.StopService();
                 RemoteWrapper.Logout();
             }
             catch

@@ -400,3 +400,4 @@ FodyWeavers.xsd
 .idea/
 !.idea/codeStyles
 !.idea/runConfigurations
+.dotnet

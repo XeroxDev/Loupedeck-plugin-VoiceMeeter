@@ -20,5 +20,16 @@
             this.Parameters = new Parameters();
             this.Levels = new Levels();
         }
+
+        public void StopService()
+        {
+            this.Connected = false;
+
+            this.Parameters?.Dispose();
+            this.Parameters = null;
+
+            this.Levels?.Dispose();
+            this.Levels = null;
+        }
     }
 }

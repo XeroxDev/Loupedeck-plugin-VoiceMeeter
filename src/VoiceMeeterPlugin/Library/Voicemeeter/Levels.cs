@@ -24,6 +24,7 @@
         private readonly IObservable<Int32> _timer;
         private IDisposable _timerSubscription;
         private List<Single> _oldValues;
+        private Boolean _disposed;
 
         public Levels(Int32 milliseconds = 20)
         {
@@ -46,6 +47,11 @@
         private void Watch() =>
             this._timerSubscription = this._timer.Subscribe(_ =>
             {
+                if (this._disposed)
+                {
+                    return;
+                }
+
                 if (this._channels.Count == 0)
                 {
                     return;
@@ -81,7 +87,11 @@
             }
         }
 
-        public void Dispose() => this._timerSubscription?.Dispose();
+        public void Dispose()
+        {
+            this._disposed = true;
+            this._timerSubscription?.Dispose();
+        }
 
         private sealed class Unsubscriber(List<IObserver<Single[]>> observers, IObserver<Single[]> observer) : IDisposable
         {
