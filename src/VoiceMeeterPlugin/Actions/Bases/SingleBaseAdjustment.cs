@@ -113,7 +113,7 @@
         {
             if (!this.IsRealClass)
             {
-                return base.OnLoad();
+                return base.OnUnload();
             }
 
             this.OnDestroy.OnNext(true);
@@ -179,7 +179,7 @@
 
             var index = this.GetButton(actionParameter);
 
-            if (this.Actions[index] is null || index == -1)
+            if (index == -1 || this.Actions[index] is null)
             {
                 return base.GetAdjustmentImage(actionParameter, imageSize);
             }

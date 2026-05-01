@@ -53,13 +53,13 @@ public class RawAdjustment : ActionEditorAdjustment
             new ActionEditorTextbox("api", "API", "The \"API\" to adjust, example: Strip[0].Gain").SetRequired()
         );
         this.ActionEditor.AddControlEx(
-            new ActionEditorTextbox("steps", "Steps", "The steps to adjust the API by").SetRequired().SetFormat(ActionEditorTextboxFormat.Integer).SetRegex(@"^-?\d+(\.\d+)?$")
+            new ActionEditorTextbox("steps", "Steps", "The steps to adjust the API by").SetRequired().SetRegex(@"^-?\d+(\.\d+)?$")
         );
         this.ActionEditor.AddControlEx(
-            new ActionEditorTextbox("min", "Min Value", "The minimum value that can be reached").SetRequired().SetFormat(ActionEditorTextboxFormat.Integer).SetRegex(@"^-?\d+(\.\d+)?$")
+            new ActionEditorTextbox("min", "Min Value", "The minimum value that can be reached").SetRequired().SetFormat(ActionEditorTextboxFormat.Integer).SetRegex(@"^-?\d+$")
         );
         this.ActionEditor.AddControlEx(
-            new ActionEditorTextbox("max", "Max Value", "The maximum value that can be reached").SetRequired().SetFormat(ActionEditorTextboxFormat.Integer).SetRegex(@"^-?\d+(\.\d+)?$")
+            new ActionEditorTextbox("max", "Max Value", "The maximum value that can be reached").SetRequired().SetFormat(ActionEditorTextboxFormat.Integer).SetRegex(@"^-?\d+$")
         );
         this.ActionEditor.AddControlEx(
             new ActionEditorTextbox("bgcolor", "Background Color", "The color it should use in hex (#rrggbb example: #FF0000 = red)").SetRegex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")

@@ -24,6 +24,7 @@ namespace Loupedeck.VoiceMeeterPlugin.Actions;
 
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Text.RegularExpressions;
 
 using Helpers;
 
@@ -189,7 +190,7 @@ public class RawCommand : MultistateActionEditorCommand
 
     private static String BuildScript(String api)
     {
-        var commands = api.Split(';');
+        var commands = Regex.Split(api, @"[;\r\n,]");
         for (var i = 0; i < commands.Length; i++)
         {
             commands[i] = BuildCommand(commands[i]);
@@ -240,7 +241,7 @@ public class RawCommand : MultistateActionEditorCommand
     }
 
     private static String GetPrimaryTarget(String api) =>
-        GetCommandTarget(api?.Split(';')[0]);
+        GetCommandTarget(Regex.Split(api ?? String.Empty, @"[;\r\n,]")[0]);
 
     private static String GetCommandTarget(String command)
     {

@@ -175,7 +175,7 @@
         {
             if (!this.IsRealClass)
             {
-                return base.OnLoad();
+                return base.OnUnload();
             }
 
             this.OnDestroy.OnNext(true);
@@ -257,6 +257,7 @@
                 mainIndex = -1;
                 action = -1;
                 actionIndex = -1;
+                return;
             }
 
             if (second != 2147483647)
