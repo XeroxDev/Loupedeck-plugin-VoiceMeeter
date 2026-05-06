@@ -2,11 +2,18 @@
 {
     using Helpers;
 
-    public abstract class SingleBaseCommand(String actionName, String description, String groupName, Action action)
-        : PluginDynamicCommand(actionName, description, groupName)
+    public abstract class SingleBaseCommand : PluginDynamicCommand
     {
-        private String ActionName { get; } = actionName;
-        private Action Action { get; } = action;
+        private String ActionName { get; }
+        private Action Action { get; }
+
+        public SingleBaseCommand(String actionName, String description, String groupName, Action action)
+            : base(actionName, description, groupName)
+        {
+            base.IsWidget = true;
+            this.ActionName = actionName;
+            this.Action = action;
+        }
 
         protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
             => DrawingHelper.DrawDefaultImage(this.ActionName, "", ColorHelper.Inactive);

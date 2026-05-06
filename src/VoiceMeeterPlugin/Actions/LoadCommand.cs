@@ -6,7 +6,11 @@
 
     public class LoadCommand : PluginDynamicCommand
     {
-        public LoadCommand() : base("Load", "Load settings", "Special") => this.MakeProfileAction("text;Path:");
+        public LoadCommand() : base("Load", "Load settings", "Special")
+        {
+            base.IsWidget = true;
+            this.MakeProfileAction("text;Path:");
+        }
 
         protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
             => DrawingHelper.DrawDefaultImage("Load", Path.GetFileNameWithoutExtension(actionParameter) ?? "", ColorHelper.Inactive);

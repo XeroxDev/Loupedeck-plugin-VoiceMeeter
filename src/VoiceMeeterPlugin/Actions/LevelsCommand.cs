@@ -42,6 +42,7 @@ public class LevelsCommand : ActionEditorCommand
 
     public LevelsCommand()
     {
+        base.IsWidget = true;
         this.DisplayName = "Level Display";
         this.Description = "Displays specific Levels";
 

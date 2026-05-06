@@ -28,6 +28,7 @@
         public SingleBaseAdjustment(Boolean hasRestart, Boolean isRealClass, Boolean isStrip, Int32 minValue = 0,
             Int32 maxValue = 10, Int32 scaleFactor = 1) : base(hasRestart)
         {
+            base.IsWidget = true;
             this.IsRealClass = isRealClass;
             this.IsStrip = isStrip;
 
@@ -57,7 +58,7 @@
             for (var hi = 0; hi < stripCount; hi++)
             {
                 var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
-                var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
+                var groupName = String.IsNullOrEmpty(name) ? GetFallbackChannelName(this.IsStrip, hi + this.Offset) : name;
                 this.AddParameter(
                     GetActionParameterName(hi, cmd),
                     this.DisplayName,
@@ -81,7 +82,7 @@
                 var newItem = new AdjustmentItem
                 {
                     Value = (Int32)(Remote.GetParameter($"{param}.{this.Command}") * this.ScaleFactor),
-                    Name = Remote.GetTextParameter($"{param}.Label"),
+                    Name = GetChannelLabel(param, this.IsStrip, hiIndex + this.Offset),
                     IsMuted = Remote.GetParameter($"{param}.Mute") > 0,
                 };
 
@@ -185,7 +186,13 @@
             }
 
             var (value, name, isMuted) = this.Actions[index];
-            var backgroundColor = !isMuted ? this.Actions[index].Value > 0 ? ColorHelper.Danger : ColorHelper.Active : ColorHelper.Inactive;
+            var backgroundColor = isMuted
+                ? ColorHelper.Inactive
+                : this.Actions[index].Value > 0
+                    ? ColorHelper.Danger
+                    : this.IsStrip
+                        ? ColorHelper.Active
+                        : ColorHelper.Inactive;
 
             return DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, value, this.MinValue, this.MaxValue, this.ScaleFactor, this.Command, name);
         }
@@ -208,6 +215,28 @@
             {
                 return -1;
             }
+        }
+
+        private static String GetChannelLabel(String parameter, Boolean isStrip, Int32 channelIndex)
+        {
+            var label = Remote.GetTextParameter($"{parameter}.Label");
+            return String.IsNullOrEmpty(label) ? GetFallbackChannelName(isStrip, channelIndex) : label;
+        }
+
+        private static String GetFallbackChannelName(Boolean isStrip, Int32 channelIndex)
+        {
+            if (isStrip)
+            {
+                return $"IN{channelIndex + 1}";
+            }
+
+            var aCount = VoiceMeeterHelper.GetStripACount();
+            if (channelIndex < aCount)
+            {
+                return $"A{channelIndex + 1}";
+            }
+
+            return $"B{channelIndex - aCount + 1}";
         }
 
         private class AdjustmentItem

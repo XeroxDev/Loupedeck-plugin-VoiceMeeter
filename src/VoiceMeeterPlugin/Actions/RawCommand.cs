@@ -41,6 +41,7 @@ public class RawCommand : MultistateActionEditorCommand
 
     public RawCommand()
     {
+        base.IsWidget = true;
         this.DisplayName = "Raw Command";
         this.Description = "Toggle a Voicemeeter parameter or execute a raw Voicemeeter script";
 

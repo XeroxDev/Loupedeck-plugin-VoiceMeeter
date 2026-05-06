@@ -43,6 +43,7 @@ public class RawAdjustment : ActionEditorAdjustment
 
     public RawAdjustment() : base(false)
     {
+        base.IsWidget = true;
         this.DisplayName = "Raw Adjustment";
         this.Description = "Adjusts a raw value";
 

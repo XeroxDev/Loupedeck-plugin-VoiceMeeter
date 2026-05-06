@@ -35,6 +35,7 @@
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, SKColor? activeColor = null, SKColor? inactiveColor = null)
         {
+            base.IsWidget = true;
             foreach (var state in Enum.GetValues(typeof(VMStates)))
             {
                 this.AddState(state.ToString(), $"If the action is {state}");
