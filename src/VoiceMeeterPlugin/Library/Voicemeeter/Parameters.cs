@@ -18,7 +18,7 @@
         private IDisposable _timerSubscription;
         private Boolean _disposed;
 
-        public Parameters(Int32 milliseconds = 20)
+        public Parameters(Int32 milliseconds = 50)
         {
             this._timer = Observable.Interval(TimeSpan.FromMilliseconds(milliseconds)).Select(_ => 1);
             this.Watch();

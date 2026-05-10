@@ -39,6 +39,7 @@ public class LevelsCommand : ActionEditorCommand
 {
     private VoiceMeeterService VmService { get; }
     private Subject<Boolean> OnDestroy { get; } = new();
+    private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(75);
 
     public LevelsCommand()
     {
@@ -78,6 +79,7 @@ public class LevelsCommand : ActionEditorCommand
     {
         this.VmService.Levels
             .TakeUntil(this.OnDestroy)
+            .Sample(RedrawThrottle)
             .Subscribe(_ => this.ActionImageChanged());
 
         return base.OnLoad();

@@ -38,6 +38,7 @@ public class RawCommand : MultistateActionEditorCommand
 {
     private VoiceMeeterService VmService { get; }
     private Subject<Boolean> OnDestroy { get; } = new();
+    private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
 
     public RawCommand()
     {
@@ -68,6 +69,7 @@ public class RawCommand : MultistateActionEditorCommand
     {
         this.VmService.Parameters
             .TakeUntil(this.OnDestroy)
+            .Sample(RedrawThrottle)
             .Subscribe(_ => this.ActionImageChanged());
 
         return base.OnLoad();

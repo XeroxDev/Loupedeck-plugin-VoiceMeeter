@@ -26,7 +26,7 @@
         private List<Single> _oldValues;
         private Boolean _disposed;
 
-        public Levels(Int32 milliseconds = 20)
+        public Levels(Int32 milliseconds = 75)
         {
             this._channels = [];
             this._timer = Observable.Interval(TimeSpan.FromMilliseconds(milliseconds)).Select(_ => 1);
@@ -59,8 +59,8 @@
                 var values = new List<Single>(this._channels.Count);
                 values.AddRange(this._channels.Select(channel => Remote.GetLevel(channel.LevelType, channel.ChannelNumber)));
                 
-                // This is maybe to harsh, but this will prevent the same values to be sent multiple times, which is good for performance.
-                if (this._oldValues != null && (this._oldValues.SequenceEqual(values) || this._oldValues.Sum() == values.Sum()))
+                // Only notify when the actual level set changed.
+                if (this._oldValues != null && this._oldValues.SequenceEqual(values))
                 {
                     return;
                 } 

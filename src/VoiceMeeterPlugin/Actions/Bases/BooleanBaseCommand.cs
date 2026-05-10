@@ -32,6 +32,7 @@
         private SKColor ActiveColor { get; }
         private SKColor InactiveColor { get; }
         protected Boolean Loaded { get; set; }
+        private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, SKColor? activeColor = null, SKColor? inactiveColor = null)
         {
@@ -167,6 +168,7 @@
 
             this.VmService.Parameters
                 .TakeUntil(this.OnDestroy)
+                .Sample(RedrawThrottle)
                 .Subscribe(_ => this.GetNewSettings());
 
             return base.OnLoad();

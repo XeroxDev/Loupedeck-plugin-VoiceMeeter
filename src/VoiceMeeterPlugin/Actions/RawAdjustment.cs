@@ -40,6 +40,7 @@ public class RawAdjustment : ActionEditorAdjustment
 {
     private VoiceMeeterService VmService { get; }
     private Subject<Boolean> OnDestroy { get; } = new();
+    private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
 
     public RawAdjustment() : base(false)
     {
@@ -77,6 +78,7 @@ public class RawAdjustment : ActionEditorAdjustment
     {
         this.VmService.Parameters
             .TakeUntil(this.OnDestroy)
+            .Sample(RedrawThrottle)
             .Subscribe(_ => this.AdjustmentValueChanged());
 
         return base.OnLoad();

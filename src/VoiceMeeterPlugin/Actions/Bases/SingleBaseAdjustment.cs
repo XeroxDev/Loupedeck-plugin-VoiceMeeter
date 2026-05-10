@@ -24,6 +24,7 @@
         private Int32 ScaleFactor { get; }
         public Boolean IsRealClass { get; set; }
         protected Boolean Loaded { get; set; }
+        private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
 
         public SingleBaseAdjustment(Boolean hasRestart, Boolean isRealClass, Boolean isStrip, Int32 minValue = 0,
             Int32 maxValue = 10, Int32 scaleFactor = 1) : base(hasRestart)
@@ -105,6 +106,7 @@
 
             this.VmService.Parameters
                 .TakeUntil(this.OnDestroy)
+                .Sample(RedrawThrottle)
                 .Subscribe(_ => this.GetNewSettings());
 
             return base.OnLoad();
