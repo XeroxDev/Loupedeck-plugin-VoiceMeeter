@@ -82,7 +82,8 @@
 
             if (drawValue)
             {
-                builder.DrawText((currentValue / scaleFactor).ToString(CultureInfo.CurrentCulture), foregroundColor);
+                var displayValue = Math.Round(currentValue / scaleFactor, 2).ToString(CultureInfo.CurrentCulture);
+                builder.DrawText(displayValue, foregroundColor);
             }
 
             var cmdSize = GetOptimalFontSize(cmd, dim: dim);

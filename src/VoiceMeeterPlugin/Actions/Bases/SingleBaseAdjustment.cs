@@ -1,10 +1,5 @@
-﻿namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
+namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
 {
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-
-    using Extensions;
-
     using Helpers;
 
     using Library.Voicemeeter;
@@ -13,18 +8,16 @@
 
     public abstract class SingleBaseAdjustment : PluginDynamicAdjustment
     {
-        private AdjustmentItem[] Actions { get; set; }
+        private readonly List<String> _actionParameters = [];
+        private readonly List<IDisposable> _subscriptions = [];
+        private readonly Dictionary<String, VoiceMeeterStateManager.AdjustmentBinding> _bindings = new(StringComparer.Ordinal);
         private VoiceMeeterService VmService { get; }
-        private String Command { get; set; }
-        private Subject<Boolean> OnDestroy { get; } = new();
         private Int32 Offset { get; set; }
         private Boolean IsStrip { get; }
         private Int32 MaxValue { get; }
         private Int32 MinValue { get; }
         private Int32 ScaleFactor { get; }
         public Boolean IsRealClass { get; set; }
-        protected Boolean Loaded { get; set; }
-        private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
 
         public SingleBaseAdjustment(Boolean hasRestart, Boolean isRealClass, Boolean isStrip, Int32 minValue = 0,
             Int32 maxValue = 10, Int32 scaleFactor = 1) : base(hasRestart)
@@ -47,67 +40,47 @@
 
         public async Task CreateCommands(Int32 stripCount, String cmd, Int32 offset, String displayName = null)
         {
-            this.Command = cmd;
             this.Offset = offset;
             this.DisplayName = displayName ?? cmd;
+
             while (!this.VmService.Connected)
             {
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
 
-            this.Actions = new AdjustmentItem[stripCount];
             for (var hi = 0; hi < stripCount; hi++)
             {
-                var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
-                var groupName = String.IsNullOrEmpty(name) ? GetFallbackChannelName(this.IsStrip, hi + this.Offset) : name;
+                var parameterKey = GetActionParameterName(hi, cmd);
+                var binding = this.VmService.StateManager.CreateAdjustmentBinding(this.IsStrip, cmd, this.Offset, hi, this.DisplayName, this.MinValue, this.MaxValue, this.ScaleFactor);
+                this._actionParameters.Add(parameterKey);
+                this._bindings[parameterKey] = binding;
+
+                var groupName = this.VmService.StateManager.GetChannelLabel(this.IsStrip, hi + this.Offset);
+
+                this.VmService.StateManager.RegisterAdjustmentTarget(binding);
+
                 this.AddParameter(
-                    GetActionParameterName(hi, cmd),
+                    parameterKey,
                     this.DisplayName,
                     $"{groupName} ({hi + 1 + this.Offset})"
                 );
-            }
-
-            this.GetNewSettings();
-        }
-
-        private static String GetActionParameterName(Int32 stripNumber, String cmd) => $"VM-Strip{stripNumber}-{cmd}";
-
-        private void GetNewSettings()
-        {
-            for (var hiIndex = 0; hiIndex < this.Actions.Length; hiIndex++)
-            {
-                var oldItem = this.Actions[hiIndex] ?? new AdjustmentItem();
-
-                var param = $"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}]";
-
-                var newItem = new AdjustmentItem
-                {
-                    Value = (Int32)(Remote.GetParameter($"{param}.{this.Command}") * this.ScaleFactor),
-                    Name = GetChannelLabel(param, this.IsStrip, hiIndex + this.Offset),
-                    IsMuted = Remote.GetParameter($"{param}.Mute") > 0,
-                };
-
-                this.Actions[hiIndex] = newItem;
-
-                if (this.Loaded && (oldItem.Value != newItem.Value || oldItem.Name != newItem.Name || oldItem.IsMuted != newItem.IsMuted))
-                {
-                    this.AdjustmentValueChanged(GetActionParameterName(hiIndex, this.Command));
-                }
             }
         }
 
         protected override Boolean OnLoad()
         {
-            this.Loaded = true;
             if (!this.IsRealClass)
             {
                 return base.OnLoad();
             }
 
-            this.VmService.Parameters
-                .TakeUntil(this.OnDestroy)
-                .Sample(RedrawThrottle)
-                .Subscribe(_ => this.GetNewSettings());
+            foreach (var actionParameter in this._actionParameters)
+            {
+                var binding = this._bindings[actionParameter];
+                this._subscriptions.Add(
+                    this.VmService.StateManager.Subscribe(binding, () => this.AdjustmentValueChanged(actionParameter))
+                );
+            }
 
             return base.OnLoad();
         }
@@ -119,7 +92,12 @@
                 return base.OnUnload();
             }
 
-            this.OnDestroy.OnNext(true);
+            foreach (var subscription in this._subscriptions)
+            {
+                subscription.Dispose();
+            }
+
+            this._subscriptions.Clear();
             return base.OnUnload();
         }
 
@@ -130,15 +108,19 @@
                 return;
             }
 
-            var index = this.GetButton(actionParameter);
-
-            if (index == -1)
+            if (!this._bindings.TryGetValue(actionParameter, out var binding))
             {
                 return;
             }
 
-            Remote.SetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}", 0);
+            var snapshot = this.VmService.StateManager.GetChannelSnapshot(binding);
+            if (snapshot is null)
+            {
+                return;
+            }
 
+            Remote.SetParameter(binding.Api, 0);
+            this.VmService.StateManager.UpdateAdjustmentTargetState(binding, 0, snapshot.IsMuted, snapshot.Label);
             this.AdjustmentValueChanged(actionParameter);
         }
 
@@ -149,14 +131,18 @@
                 return;
             }
 
-            var index = this.GetButton(actionParameter);
-
-            if (index == -1 || this.Actions[index] is null)
+            if (!this._bindings.TryGetValue(actionParameter, out var binding))
             {
                 return;
             }
 
-            var newVal = this.Actions[index].Value + diff;
+            var snapshot = this.VmService.StateManager.GetChannelSnapshot(binding);
+            if (snapshot is null)
+            {
+                return;
+            }
+
+            var newVal = (Int32)snapshot.Value + diff;
             if (newVal < this.MinValue)
             {
                 newVal = this.MinValue;
@@ -166,10 +152,9 @@
                 newVal = this.MaxValue;
             }
 
-
-            Remote.SetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}",
-                newVal / this.ScaleFactor);
-
+            var normalizedValue = (Single)newVal / this.ScaleFactor;
+            Remote.SetParameter(binding.Api, normalizedValue);
+            this.VmService.StateManager.UpdateAdjustmentTargetState(binding, normalizedValue, snapshot.IsMuted, snapshot.Label);
             this.AdjustmentValueChanged(actionParameter);
         }
 
@@ -180,23 +165,9 @@
                 return null;
             }
 
-            var index = this.GetButton(actionParameter);
-
-            if (index == -1 || this.Actions[index] is null)
-            {
-                return base.GetAdjustmentImage(actionParameter, imageSize);
-            }
-
-            var (value, name, isMuted) = this.Actions[index];
-            var backgroundColor = isMuted
-                ? ColorHelper.Inactive
-                : this.Actions[index].Value > 0
-                    ? ColorHelper.Danger
-                    : this.IsStrip
-                        ? ColorHelper.Active
-                        : ColorHelper.Inactive;
-
-            return DrawingHelper.DrawVolumeBar(imageSize, backgroundColor.ToBitmapColor(), BitmapColor.White, value, this.MinValue, this.MaxValue, this.ScaleFactor, this.Command, name);
+            return this._bindings.TryGetValue(actionParameter, out var binding)
+                ? this.VmService.StateManager.GetAdjustmentImage(binding, imageSize)
+                : null;
         }
 
         protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize) => this.GetAdjustmentImage(actionParameter, imageSize);
@@ -205,54 +176,7 @@
 
         protected override Double? GetAdjustmentMaxValue(String actionParameter) => this.MaxValue;
 
-        private Int32 GetButton(String actionParameter)
-        {
-            var number = actionParameter.Replace("VM-Strip", "").Replace($"-{this.Command}", "");
+        private static String GetActionParameterName(Int32 stripNumber, String cmd) => $"VM-Strip{stripNumber}-{cmd}";
 
-            if (Int32.TryParse(number, out var index))
-            {
-                return index;
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        private static String GetChannelLabel(String parameter, Boolean isStrip, Int32 channelIndex)
-        {
-            var label = Remote.GetTextParameter($"{parameter}.Label");
-            return String.IsNullOrEmpty(label) ? GetFallbackChannelName(isStrip, channelIndex) : label;
-        }
-
-        private static String GetFallbackChannelName(Boolean isStrip, Int32 channelIndex)
-        {
-            if (isStrip)
-            {
-                return $"IN{channelIndex + 1}";
-            }
-
-            var aCount = VoiceMeeterHelper.GetStripACount();
-            if (channelIndex < aCount)
-            {
-                return $"A{channelIndex + 1}";
-            }
-
-            return $"B{channelIndex - aCount + 1}";
-        }
-
-        private class AdjustmentItem
-        {
-            public Single Value { get; set; }
-            public String Name { get; set; }
-            public Boolean IsMuted { get; set; }
-
-            public void Deconstruct(out Single value, out String name, out Boolean isMuted)
-            {
-                value = this.Value;
-                name = this.Name;
-                isMuted = this.IsMuted;
-            }
-        }
     }
 }

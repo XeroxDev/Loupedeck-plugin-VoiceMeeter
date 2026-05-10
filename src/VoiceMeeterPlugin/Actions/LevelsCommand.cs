@@ -1,17 +1,17 @@
-﻿// This file is part of the VoiceMeeterPlugin project.
-// 
+// This file is part of the VoiceMeeterPlugin project.
+//
 // Copyright (c) 2024 Dominic Ris
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,8 +22,7 @@
 
 namespace Loupedeck.VoiceMeeterPlugin.Actions;
 
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using System.Globalization;
 
 using Extensions;
 
@@ -38,8 +37,8 @@ using SkiaSharp;
 public class LevelsCommand : ActionEditorCommand
 {
     private VoiceMeeterService VmService { get; }
-    private Subject<Boolean> OnDestroy { get; } = new();
-    private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(75);
+    private IDisposable _subscription;
+    private VoiceMeeterStateManager.LevelBinding _binding;
 
     public LevelsCommand()
     {
@@ -65,7 +64,6 @@ public class LevelsCommand : ActionEditorCommand
 
         this.ActionEditor.ListboxItemsRequested += (_, e) =>
         {
-            // iterate over LevelType enum values and add them (their name) to the listbox
             foreach (var value in Enum.GetValues(typeof(LevelType)))
             {
                 e.Items.Add(new ActionEditorListboxItem("channel_type_" + value, value.ToString(), ""));
@@ -75,104 +73,56 @@ public class LevelsCommand : ActionEditorCommand
         this.VmService = VoiceMeeterService.Instance;
     }
 
-    protected override Boolean OnLoad()
-    {
-        this.VmService.Levels
-            .TakeUntil(this.OnDestroy)
-            .Sample(RedrawThrottle)
-            .Subscribe(_ => this.ActionImageChanged());
-
-        return base.OnLoad();
-    }
-
     protected override Boolean OnUnload()
     {
-        this.OnDestroy.OnNext(true);
+        if (this._subscription != null)
+        {
+            this._subscription.Dispose();
+            this._subscription = null;
+        }
+
         return base.OnUnload();
     }
 
     protected override String GetCommandDisplayName(ActionEditorActionParameters actionParameters)
     {
-        Tuple<String, Levels.Channel, SKColor, SKColor> parameters;
-        try
-        {
-            parameters = GetParameters(actionParameters);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
+        var parameters = GetParameters(actionParameters);
         if (parameters == null)
         {
             return null;
         }
 
         var (name, channel, _, _) = parameters;
-
-        this.VmService.Levels.AddChannel(channel);
-
-        var currentValue = 0f;
-
-        try
-        {
-            currentValue = Remote.GetLevel(channel.LevelType, channel.ChannelNumber);
-        }
-        catch (Exception)
-        {
-            // ignore
-        }
-        
-        currentValue = (Single)Math.Round(currentValue, 10);
-        
-        return $"{name} - {currentValue:P0}";
+        var binding = this.VmService.StateManager.CreateLevelBinding(name, channel.LevelType, channel.ChannelNumber, parameters.Item3, parameters.Item4);
+        this.EnsureRegistered(binding);
+        return this.VmService.StateManager.GetLevelDisplayName(binding);
     }
 
     protected override BitmapImage GetCommandImage(ActionEditorActionParameters actionParameters, Int32 imageWidth, Int32 imageHeight)
     {
-        Tuple<String, Levels.Channel, SKColor, SKColor> parameters;
-        try
-        {
-            parameters = GetParameters(actionParameters);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
+        var parameters = GetParameters(actionParameters);
         if (parameters == null)
         {
             return null;
         }
 
-        var (name, channel, bgColor, fgColor) = parameters;
+        var binding = this.VmService.StateManager.CreateLevelBinding(parameters.Item1, parameters.Item2.LevelType, parameters.Item2.ChannelNumber, parameters.Item3, parameters.Item4);
+        this.EnsureRegistered(binding);
+        return this.VmService.StateManager.GetLevelImage(binding);
+    }
 
-        this.VmService.Levels.AddChannel(channel);
-
-        var currentValue = 0f;
-
-        try
+    private void EnsureRegistered(VoiceMeeterStateManager.LevelBinding binding)
+    {
+        if (this._binding?.StateKey == binding.StateKey)
         {
-            currentValue = Remote.GetLevel(channel.LevelType, channel.ChannelNumber);
-        }
-        catch (Exception)
-        {
-            // ignore
+            return;
         }
 
-        currentValue = (Single)Math.Round(currentValue, 10);
-        
-        if (currentValue < 0)
-        {
-            currentValue = 0;
-        }
-        
-        if (currentValue > 1)
-        {
-            currentValue = 1;
-        }
+        this._binding = binding;
+        this.VmService.StateManager.RegisterLevelTarget(binding);
 
-        return DrawingHelper.DrawVolumeBar(PluginImageSize.Width60, bgColor.ToBitmapColor(), fgColor.ToBitmapColor(), currentValue, 0, 1, 1, "", name, false);
+        this._subscription?.Dispose();
+        this._subscription = this.VmService.StateManager.Subscribe(binding, () => this.ActionImageChanged());
     }
 
     private static Tuple<String, Levels.Channel, SKColor, SKColor> GetParameters(ActionEditorActionParameters actionParameters)
@@ -183,7 +133,6 @@ public class LevelsCommand : ActionEditorCommand
         actionParameters.TryGetString("bgcolor", out var bgColor);
         actionParameters.TryGetString("fgcolor", out var fgColor);
 
-        // for the channel type, we first have to remove the prefix
         var type = channelType.Replace("channel_type_", "");
         if (!Enum.TryParse<LevelType>(type, out var levelType))
         {

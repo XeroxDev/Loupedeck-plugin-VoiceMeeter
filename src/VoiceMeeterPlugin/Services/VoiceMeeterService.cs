@@ -1,40 +1,17 @@
-﻿namespace Loupedeck.VoiceMeeterPlugin.Services
+namespace Loupedeck.VoiceMeeterPlugin.Services
 {
-    using Library.Voicemeeter;
-
     public sealed class VoiceMeeterService
     {
         public static VoiceMeeterService Instance => Lazy.Value;
 
         private static readonly Lazy<VoiceMeeterService> Lazy = new(() => new VoiceMeeterService());
 
-        public Parameters Parameters { get; set; }
-        public Levels Levels { get; set; }
-        public Boolean Connected { get; set; }
-        private IDisposable RemoteSession { get; set; }
+        public VoiceMeeterStateManager StateManager { get; } = new();
+        public Boolean Connected => this.StateManager.Connected;
 
-        public async Task StartService(ClientApplication application)
-        {
-            this.RemoteSession?.Dispose();
-            this.RemoteSession = await Remote.Initialize(RunVoicemeeterParam.None, application);
+        public Task StartService(ClientApplication application) =>
+            this.StateManager.StartAsync(application);
 
-            this.Connected = true;
-            this.Parameters = new Parameters();
-            this.Levels = new Levels();
-        }
-
-        public void StopService()
-        {
-            this.Connected = false;
-
-            this.Parameters?.Dispose();
-            this.Parameters = null;
-
-            this.Levels?.Dispose();
-            this.Levels = null;
-
-            this.RemoteSession?.Dispose();
-            this.RemoteSession = null;
-        }
+        public void StopService() => this.StateManager.Stop();
     }
 }

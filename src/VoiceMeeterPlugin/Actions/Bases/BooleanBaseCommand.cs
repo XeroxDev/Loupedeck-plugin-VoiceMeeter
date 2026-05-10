@@ -1,8 +1,5 @@
-﻿namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
+namespace Loupedeck.VoiceMeeterPlugin.Actions.Bases
 {
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-
     using Extensions;
 
     using Helpers;
@@ -21,18 +18,15 @@
             On
         }
 
-        private Dictionary<Int32, Boolean[]> Actions { get; } = new();
-        private VoiceMeeterService VmService { get; }
-        private Boolean IsMultiAction { get; set; }
-        private String Command { get; set; }
-        private Subject<Boolean> OnDestroy { get; } = new();
+        private readonly List<String> _actionParameters = [];
+        private readonly List<IDisposable> _subscriptions = [];
+        private readonly Dictionary<String, VoiceMeeterStateManager.BooleanBinding> _bindings = new(StringComparer.Ordinal);
         public Boolean IsRealClass { get; set; }
         private Boolean IsStrip { get; }
         private Int32 Offset { get; set; }
         private SKColor ActiveColor { get; }
         private SKColor InactiveColor { get; }
-        protected Boolean Loaded { get; set; }
-        private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
+        private VoiceMeeterService VmService { get; }
 
         public BooleanBaseCommand(Boolean isRealClass, Boolean isStrip, SKColor? activeColor = null, SKColor? inactiveColor = null)
         {
@@ -57,119 +51,87 @@
         public async Task CreateCommands(Int32 stripCount, String cmd, Int32 specialCount, Int32 offset,
             String displayName = null)
         {
-            this.IsMultiAction = true;
-            this.Command = cmd;
             this.Offset = offset;
             this.DisplayName = displayName ?? cmd;
+
             while (!this.VmService.Connected)
             {
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
 
             for (var hi = 0; hi < stripCount; hi++)
             {
-                this.Actions.Add(hi, new Boolean[specialCount]);
                 for (var special = 1; special <= specialCount; special++)
                 {
-                    var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
-                    var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
+                    var key = GetActionParameterName(hi, cmd, special);
+                    var binding = this.VmService.StateManager.CreateBooleanBinding(this.IsStrip, true, cmd, offset, hi, special - 1, $"{this.DisplayName}{special}", this.ActiveColor, this.InactiveColor);
+                    this._actionParameters.Add(key);
+                    this._bindings[key] = binding;
+
+                    var groupName = this.VmService.StateManager.GetChannelLabel(this.IsStrip, hi + this.Offset);
+                    this.VmService.StateManager.RegisterBooleanTarget(binding);
+
                     this.AddParameter(
-                        GetActionParameterName(hi, cmd, special),
+                        key,
                         $"{this.DisplayName}{special}",
                         $"{groupName} ({hi + 1 + this.Offset})"
                     );
                 }
             }
-
-            this.GetNewSettings();
         }
 
         public async Task CreateCommands(Int32 stripCount, String cmd, Int32 offset, String displayName = null)
         {
-            this.IsMultiAction = false;
-            this.Command = cmd;
             this.Offset = offset;
             this.DisplayName = displayName ?? cmd;
+
             while (!this.VmService.Connected)
             {
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
 
-            this.Actions.Add(0, new Boolean[stripCount]);
             for (var hi = 0; hi < stripCount; hi++)
             {
-                var name = Remote.GetTextParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hi + this.Offset}].Label");
-                var groupName = String.IsNullOrEmpty(name) ? this.IsStrip ? "Strip" : "Bus" : name;
+                var key = GetActionParameterName(hi, cmd);
+                var binding = this.VmService.StateManager.CreateBooleanBinding(this.IsStrip, false, cmd, offset, 0, hi, this.DisplayName, this.ActiveColor, this.InactiveColor);
+                this._actionParameters.Add(key);
+                this._bindings[key] = binding;
+
+                var groupName = this.VmService.StateManager.GetChannelLabel(this.IsStrip, hi + this.Offset);
+
+                this.VmService.StateManager.RegisterBooleanTarget(binding);
+
                 this.AddParameter(
-                    GetActionParameterName(hi, cmd),
+                    key,
                     this.DisplayName,
                     $"{groupName} ({hi + 1 + this.Offset})"
                 );
-            }
-
-            this.GetNewSettings();
-        }
-
-        private static String GetActionParameterName(Int32 stripNumber, String cmd, Int32? specialNumber = null) =>
-            specialNumber == null ? $"VM-Strip{stripNumber}-{cmd}2147483647" : $"VM-Strip{stripNumber}-{cmd}{specialNumber.Value}";
-
-
-        private void GetNewSettings()
-        {
-            if (this.IsMultiAction)
-            {
-                for (var hiIndex = 0; hiIndex < this.Actions.Count; hiIndex++)
-                {
-                    var hi = this.Actions[hiIndex];
-                    for (var index = 1; index <= hi.Length; index++)
-                    {
-                        var oldValue = hi[index - 1];
-                        var newValue = (Int32)Remote.GetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{hiIndex + this.Offset}].{this.Command}{index}") == 1;
-                        hi[index - 1] = newValue;
-
-                        if (!this.Loaded || oldValue == hi[index - 1])
-                        {
-                            continue;
-                        }
-
-                        var actionParameter = GetActionParameterName(hiIndex, this.Command, index);
-                        this.SetCurrentState(actionParameter, newValue ? VMStates.On.ToInt() : VMStates.Off.ToInt());
-                        this.ActionImageChanged(actionParameter);
-                    }
-                }
-            }
-            else
-            {
-                var hi = this.Actions[0];
-                for (var index = 0; index < hi.Length; index++)
-                {
-                    var oldValue = hi[index];
-                    var newValue = (Int32)Remote.GetParameter($"{(this.IsStrip ? "Strip" : "Bus")}[{index + this.Offset}].{this.Command}") == 1;
-                    hi[index] = newValue;
-                    if (!this.Loaded || oldValue == hi[index])
-                    {
-                        continue;
-                    }
-
-                    var actionParameter = GetActionParameterName(index, this.Command);
-                    this.SetCurrentState(actionParameter, newValue ? VMStates.On.ToInt() : VMStates.Off.ToInt());
-                    this.ActionImageChanged(actionParameter);
-                }
             }
         }
 
         protected override Boolean OnLoad()
         {
-            this.Loaded = true;
             if (!this.IsRealClass)
             {
                 return base.OnLoad();
             }
 
-            this.VmService.Parameters
-                .TakeUntil(this.OnDestroy)
-                .Sample(RedrawThrottle)
-                .Subscribe(_ => this.GetNewSettings());
+            foreach (var actionParameter in this._actionParameters)
+            {
+                var binding = this._bindings[actionParameter];
+                this._subscriptions.Add(
+                    this.VmService.StateManager.Subscribe(binding, () =>
+                    {
+                        var snapshot = this.VmService.StateManager.GetChannelSnapshot(binding);
+                        if (snapshot != null)
+                        {
+                            this.SetCurrentState(actionParameter, snapshot.IsOn ? VMStates.On.ToInt() : VMStates.Off.ToInt());
+                        }
+
+                        this.ActionImageChanged(actionParameter);
+                    })
+                );
+            }
 
             return base.OnLoad();
         }
@@ -181,7 +143,12 @@
                 return base.OnUnload();
             }
 
-            this.OnDestroy.OnNext(true);
+            foreach (var subscription in this._subscriptions)
+            {
+                subscription.Dispose();
+            }
+
+            this._subscriptions.Clear();
             return base.OnUnload();
         }
 
@@ -192,22 +159,16 @@
                 return;
             }
 
-            this.GetButton(actionParameter, out var mainIndex, out var action, out var actionIndex);
-
-            if (mainIndex == -1 || action == -1)
+            if (!this._bindings.TryGetValue(actionParameter, out var binding))
             {
                 return;
             }
 
-            var state = this.Actions[mainIndex][actionIndex] ? VMStates.Off : VMStates.On;
-
-            Remote.SetParameter(
-                this.IsMultiAction
-                    ? $"{(this.IsStrip ? "Strip" : "Bus")}[{mainIndex + this.Offset}].{this.Command}{action}"
-                    : $"{(this.IsStrip ? "Strip" : "Bus")}[{action + this.Offset}].{this.Command}",
-                state.ToInt());
-
-            this.SetCurrentState(actionParameter, state.ToInt());
+            var snapshot = this.VmService.StateManager.GetChannelSnapshot(binding);
+            var newState = snapshot is null || !snapshot.IsOn;
+            Remote.SetParameter(binding.Api, newState ? 1 : 0);
+            this.VmService.StateManager.UpdateBooleanTargetState(binding, newState);
+            this.SetCurrentState(actionParameter, newState ? VMStates.On.ToInt() : VMStates.Off.ToInt());
             this.ActionImageChanged(actionParameter);
         }
 
@@ -218,7 +179,7 @@
                 return null;
             }
 
-            return $"{this.DisplayName}\n{(VMStates.On.CompareInt(state) ? "On" : "Off")}";
+            return this.VmService.StateManager.GetBooleanDisplayName(this._bindings[actionParameter], state);
         }
 
         protected override BitmapImage GetCommandImage(String actionParameter, Int32 state, PluginImageSize imageSize)
@@ -228,53 +189,16 @@
                 return null;
             }
 
-            this.GetButton(actionParameter, out var mainIndex, out var action, out _);
-
-            if (mainIndex == -1 || action == -1)
+            if (!this._bindings.TryGetValue(actionParameter, out var binding))
             {
                 return null;
             }
 
-            var actionString = this.IsMultiAction
-                ? $"{(this.IsStrip ? "Strip" : "Bus")}[{mainIndex + this.Offset}]"
-                : $"{(this.IsStrip ? "Strip" : "Bus")}[{action + this.Offset}]";
-            var name = Remote.GetTextParameter($"{actionString}.Label");
-            if (String.IsNullOrEmpty(name))
-            {
-                name = this.IsMultiAction
-                    ? $"{(this.IsStrip ? "Strip" : "Bus")} {mainIndex + 1 + this.Offset}"
-                    : $"{(this.IsStrip ? "Strip" : "Bus")} {action + 1 + this.Offset}";
-            }
-
-            return DrawingHelper.DrawDefaultImage(this.IsMultiAction ? $"{this.DisplayName}{action}" : this.DisplayName, name, VMStates.On.CompareInt(state) ? this.ActiveColor : this.InactiveColor);
+            return this.VmService.StateManager.GetBooleanImage(binding, state);
         }
 
-        private void GetButton(String actionParameter, out Int32 mainIndex, out Int32 action, out Int32 actionIndex)
-        {
-            var splitted = actionParameter.Replace("VM-Strip", "").Replace(this.Command, "").Split('-');
+        private static String GetActionParameterName(Int32 stripNumber, String cmd, Int32? specialNumber = null) =>
+            specialNumber == null ? $"VM-Strip{stripNumber}-{cmd}2147483647" : $"VM-Strip{stripNumber}-{cmd}{specialNumber.Value}";
 
-            var firstSplitTruthy = Int32.TryParse(splitted[0], out var first);
-            var secondSplitTruthy = Int32.TryParse(splitted[1], out var second);
-            if (!firstSplitTruthy || !secondSplitTruthy)
-            {
-                mainIndex = -1;
-                action = -1;
-                actionIndex = -1;
-                return;
-            }
-
-            if (second != 2147483647)
-            {
-                mainIndex = first;
-                action = second;
-                actionIndex = second - 1;
-            }
-            else
-            {
-                mainIndex = 0;
-                action = first;
-                actionIndex = first;
-            }
-        }
     }
 }

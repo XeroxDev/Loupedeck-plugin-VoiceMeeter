@@ -1,17 +1,17 @@
-﻿// This file is part of the VoiceMeeterPlugin project.
-// 
+// This file is part of the VoiceMeeterPlugin project.
+//
 // Copyright (c) 2024 Dominic Ris
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,10 +23,6 @@
 namespace Loupedeck.VoiceMeeterPlugin.Actions;
 
 using System.Globalization;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-
-using Extensions;
 
 using Helpers;
 
@@ -39,8 +35,8 @@ using SkiaSharp;
 public class RawAdjustment : ActionEditorAdjustment
 {
     private VoiceMeeterService VmService { get; }
-    private Subject<Boolean> OnDestroy { get; } = new();
-    private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
+    private IDisposable _subscription;
+    private VoiceMeeterStateManager.RawAdjustmentBinding _binding;
 
     public RawAdjustment() : base(false)
     {
@@ -74,19 +70,14 @@ public class RawAdjustment : ActionEditorAdjustment
         this.VmService = VoiceMeeterService.Instance;
     }
 
-    protected override Boolean OnLoad()
-    {
-        this.VmService.Parameters
-            .TakeUntil(this.OnDestroy)
-            .Sample(RedrawThrottle)
-            .Subscribe(_ => this.AdjustmentValueChanged());
-
-        return base.OnLoad();
-    }
-
     protected override Boolean OnUnload()
     {
-        this.OnDestroy.OnNext(true);
+        if (this._subscription != null)
+        {
+            this._subscription.Dispose();
+            this._subscription = null;
+        }
+
         return base.OnUnload();
     }
 
@@ -95,73 +86,44 @@ public class RawAdjustment : ActionEditorAdjustment
 
     protected override BitmapImage GetAdjustmentImage(ActionEditorActionParameters actionParameters, Int32 imageWidth, Int32 imageHeight)
     {
-        Tuple<String, String, Single, Int32, Int32, SKColor, SKColor> parameters;
-        try
-        {
-            parameters = GetParameters(actionParameters);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
+        var parameters = GetParameters(actionParameters);
         if (parameters == null)
         {
             return null;
         }
 
-        var (name, api, steps, min, max, bgColor, fgColor) = parameters;
-
-        var currentValue = -9999f;
-
-        try
-        {
-            currentValue = Remote.GetParameter(api);
-        }
-        catch (Exception)
-        {
-            // ignore
-        }
-        
-        var decimalPlaces = GetDecimalPlaces(steps);
-        currentValue = (Single)Math.Round(currentValue, decimalPlaces);
-        
-
-        return DrawingHelper.DrawVolumeBar(PluginImageSize.Width60, bgColor.ToBitmapColor(), fgColor.ToBitmapColor(), currentValue, min, max, 1, "", name);
+        var binding = this.VmService.StateManager.CreateRawAdjustmentBinding(parameters.Item1, parameters.Item2, parameters.Item3, parameters.Item4, parameters.Item5, parameters.Item6, parameters.Item7);
+        this.EnsureRegistered(binding);
+        return this.VmService.StateManager.GetRawAdjustmentImage(binding);
     }
 
     protected override Boolean ApplyAdjustment(ActionEditorActionParameters actionParameters, Int32 diff)
     {
-        Tuple<String, String, Single, Int32, Int32, SKColor, SKColor> parameters;
-        try
-        {
-            parameters = GetParameters(actionParameters);
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-
+        var parameters = GetParameters(actionParameters);
         if (parameters == null)
         {
             return false;
         }
 
-        var (_, api, steps, min, max, _, _) = parameters;
+        var binding = this.VmService.StateManager.CreateRawAdjustmentBinding(parameters.Item1, parameters.Item2, parameters.Item3, parameters.Item4, parameters.Item5, parameters.Item6, parameters.Item7);
+        this.EnsureRegistered(binding);
 
         try
         {
-            var currentValue = Remote.GetParameter(api);
-            var newValue = currentValue + diff * steps;
-            if (newValue < min)
+            var currentValue = this.VmService.StateManager.GetRawAdjustmentValue(binding);
+
+            var newValue = currentValue + diff * binding.Steps;
+            if (newValue < binding.MinValue)
             {
-                newValue = min;
+                newValue = binding.MinValue;
             }
-            else if (newValue > max)
+            else if (newValue > binding.MaxValue)
             {
-                newValue = max;
+                newValue = binding.MaxValue;
             }
-            Remote.SetParameter(api, newValue);
+
+            Remote.SetParameter(binding.Api, newValue);
+            this.VmService.StateManager.UpdateRawAdjustmentState(binding, newValue);
         }
         catch (Exception)
         {
@@ -169,6 +131,20 @@ public class RawAdjustment : ActionEditorAdjustment
         }
 
         return true;
+    }
+
+    private void EnsureRegistered(VoiceMeeterStateManager.RawAdjustmentBinding binding)
+    {
+        if (this._binding?.StateKey == binding.StateKey)
+        {
+            return;
+        }
+
+        this._binding = binding;
+        this.VmService.StateManager.RegisterRawAdjustmentTarget(binding);
+
+        this._subscription?.Dispose();
+        this._subscription = this.VmService.StateManager.Subscribe(binding, () => this.AdjustmentValueChanged());
     }
 
     private static Tuple<String, String, Single, Int32, Int32, SKColor, SKColor> GetParameters(ActionEditorActionParameters actionParameters)
@@ -189,12 +165,5 @@ public class RawAdjustment : ActionEditorAdjustment
             Int32.TryParse(max, NumberStyles.Any, CultureInfo.InvariantCulture, out var maxValue) ? maxValue : 100,
             SKColor.TryParse(bgColor, out var bg) ? bg : ColorHelper.Inactive,
             SKColor.TryParse(fgColor, out var fg) ? fg : SKColors.White);
-    }
-    
-    private static Int32 GetDecimalPlaces(Single steps)
-    {
-        var str = steps.ToString(CultureInfo.InvariantCulture);
-        var index = str.IndexOf('.');
-        return index == -1 ? 0 : str.Length - index - 1;
     }
 }

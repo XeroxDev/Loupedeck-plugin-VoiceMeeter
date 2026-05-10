@@ -1,17 +1,17 @@
-﻿// This file is part of the VoiceMeeterPlugin project.
-// 
+// This file is part of the VoiceMeeterPlugin project.
+//
 // Copyright (c) 2024 Dominic Ris
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,8 +22,7 @@
 
 namespace Loupedeck.VoiceMeeterPlugin.Actions;
 
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 using Helpers;
@@ -37,8 +36,9 @@ using SkiaSharp;
 public class RawCommand : MultistateActionEditorCommand
 {
     private VoiceMeeterService VmService { get; }
-    private Subject<Boolean> OnDestroy { get; } = new();
-    private static readonly TimeSpan RedrawThrottle = TimeSpan.FromMilliseconds(50);
+    private IDisposable _subscription;
+    private VoiceMeeterStateManager.RawCommandBinding _binding;
+    private ActionEditorActionParameters _lastActionParameters;
 
     public RawCommand()
     {
@@ -62,22 +62,16 @@ public class RawCommand : MultistateActionEditorCommand
         this.VmService = VoiceMeeterService.Instance;
         this.AddState("Off", "If the action is off");
         this.AddState("On", "If the action is on");
-
-    }
-
-    protected override Boolean OnLoad()
-    {
-        this.VmService.Parameters
-            .TakeUntil(this.OnDestroy)
-            .Sample(RedrawThrottle)
-            .Subscribe(_ => this.ActionImageChanged());
-
-        return base.OnLoad();
     }
 
     protected override Boolean OnUnload()
     {
-        this.OnDestroy.OnNext(true);
+        if (this._subscription != null)
+        {
+            this._subscription.Dispose();
+            this._subscription = null;
+        }
+
         return base.OnUnload();
     }
 
@@ -94,12 +88,13 @@ public class RawCommand : MultistateActionEditorCommand
         }
 
         var (name, _, _, _) = parameters;
-
         return $"{name} - {(stateIndex == 0 ? "Off" : "On")}";
     }
 
     protected override BitmapImage GetCommandImage(ActionEditorActionParameters actionParameters, Int32 stateIndex, Int32 imageWidth, Int32 imageHeight)
     {
+        this._lastActionParameters = actionParameters;
+
         (String Name, String Api, SKColor OnColor, SKColor OffColor) parameters;
         try
         {
@@ -110,25 +105,15 @@ public class RawCommand : MultistateActionEditorCommand
             return null;
         }
 
-        var (name, api, onColor, offColor) = parameters;
-
-        var currentValue = false;
-
-        try
-        {
-            currentValue = TryReadBooleanState(api, out var stateTarget) && stateTarget;
-        }
-        catch (Exception)
-        {
-            // ignore
-        }
-
-
-        return DrawingHelper.DrawDefaultImage(name, "", currentValue ? onColor : offColor);
+        var binding = this.VmService.StateManager.CreateRawCommandBinding(parameters.Name, parameters.Api, parameters.OnColor, parameters.OffColor);
+        this.EnsureRegistered(binding);
+        return this.VmService.StateManager.GetRawCommandImage(binding);
     }
 
     protected override Boolean RunCommand(ActionEditorActionParameters actionParameters)
     {
+        this._lastActionParameters = actionParameters;
+
         (String Name, String Api, SKColor OnColor, SKColor OffColor) parameters;
         try
         {
@@ -139,30 +124,36 @@ public class RawCommand : MultistateActionEditorCommand
             return false;
         }
 
-        var (_, api, _, _) = parameters;
+        var binding = this.VmService.StateManager.CreateRawCommandBinding(parameters.Name, parameters.Api, parameters.OnColor, parameters.OffColor);
+        this.EnsureRegistered(binding);
 
         try
         {
-            if (IsScript(api))
+            if (IsScript(binding.Api))
             {
-                var script = BuildScript(api);
+                var script = BuildScript(binding.Api);
                 Remote.SetParameters(script);
 
-                if (TryReadBooleanState(GetPrimaryTarget(api), out var stateTarget))
+                if (TryReadBooleanState(binding.Target, out var stateTarget))
                 {
+                    this.VmService.StateManager.UpdateRawCommandState(binding, stateTarget);
                     this.SetCurrentState(actionParameters, stateTarget ? 1 : 0);
                 }
             }
             else
             {
-                if (TryReadBooleanState(api, out var currentValue))
+                if (TryReadBooleanState(binding.Api, out var currentValue))
                 {
-                    Remote.SetParameter(api, currentValue ? 0 : 1);
-                    this.SetCurrentState(actionParameters, currentValue ? 0 : 1);
+                    var newState = !currentValue;
+                    Remote.SetParameter(binding.Api, newState ? 1 : 0);
+                    this.VmService.StateManager.UpdateRawCommandState(binding, newState);
+                    this.SetCurrentState(actionParameters, newState ? 1 : 0);
                 }
                 else
                 {
-                    Remote.SetParameter(api, 1);
+                    Remote.SetParameter(binding.Api, 1);
+                    this.VmService.StateManager.UpdateRawCommandState(binding, true);
+                    this.SetCurrentState(actionParameters, 1);
                 }
             }
         }
@@ -172,6 +163,29 @@ public class RawCommand : MultistateActionEditorCommand
         }
 
         return true;
+    }
+
+    private void EnsureRegistered(VoiceMeeterStateManager.RawCommandBinding binding)
+    {
+        if (this._binding?.StateKey == binding.StateKey)
+        {
+            return;
+        }
+
+        this._binding = binding;
+        this.VmService.StateManager.RegisterRawCommandTarget(binding);
+
+        this._subscription?.Dispose();
+        this._subscription = this.VmService.StateManager.Subscribe(binding, () =>
+        {
+            var state = this.VmService.StateManager.GetRawCommandState(binding);
+            if (this._lastActionParameters != null)
+            {
+                this.SetCurrentState(this._lastActionParameters, state ? 1 : 0);
+            }
+
+            this.ActionImageChanged();
+        });
     }
 
     private static (String Name, String Api, SKColor OnColor, SKColor OffColor) GetParameters(ActionEditorActionParameters actionParameters)
