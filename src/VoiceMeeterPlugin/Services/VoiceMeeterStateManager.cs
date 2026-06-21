@@ -171,6 +171,9 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
         }
 
         private readonly object _gate = new();
+        private readonly object _connectionGate = new();
+        private readonly SemaphoreSlim _reconnectSignal = new(0, 1);
+        private readonly TimeSpan _startupDirtyGrace = TimeSpan.FromSeconds(5);
         private readonly Dictionary<String, List<Action>> _callbacks = new(StringComparer.Ordinal);
         private readonly Dictionary<String, BooleanDefinition> _booleanDefinitions = new(StringComparer.Ordinal);
         private readonly Dictionary<String, AdjustmentDefinition> _adjustmentDefinitions = new(StringComparer.Ordinal);
@@ -184,7 +187,13 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
         private IDisposable _parametersSubscription;
         private IDisposable _levelsSubscription;
         private IDisposable _remoteSession;
-        private Boolean _connected;
+        private ClientApplication _application;
+        private CancellationTokenSource _reconnectCts;
+        private Task _reconnectTask;
+        private volatile Boolean _connected;
+        private DateTime _connectedAtUtc;
+        private DateTime _lastStartupDirtyLogUtc;
+        private Int32 _consecutiveDirtyFailures;
         private Boolean _disposed;
 
         public Boolean Connected => this._connected;
@@ -193,43 +202,29 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
 
         public async Task StartAsync(ClientApplication application)
         {
+            PluginLog.Info("VM state manager: start requested");
             this.Stop();
+            this._application = application;
 
-            this._remoteSession = await Remote.Initialize(RunVoicemeeterParam.None, application).ConfigureAwait(false);
-            this._connected = this._remoteSession != null;
+            await this.TryConnectAsync().ConfigureAwait(false);
 
-            if (!this._connected)
-            {
-                return;
-            }
-
-            this._parameters = new Parameters();
-            this._levels = new Levels();
-
-            this._parametersSubscription = this._parameters.Subscribe(_ => this.RefreshFromParameters());
-            this._levelsSubscription = this._levels.Subscribe(_ => this.RefreshFromLevels());
-
-            this.RefreshAll();
+            this._reconnectCts = new CancellationTokenSource();
+            this._reconnectTask = Task.Run(() => this.ReconnectLoopAsync(this._reconnectCts.Token));
+            PluginLog.Info("VM state manager: reconnect loop started");
         }
 
         public void Stop()
         {
+            PluginLog.Info("VM state manager: stop requested");
+            this._reconnectCts?.Cancel();
+            this._reconnectCts?.Dispose();
+            this._reconnectCts = null;
+            this._reconnectTask = null;
+
+            this._application = null;
             this._connected = false;
 
-            this._parametersSubscription?.Dispose();
-            this._parametersSubscription = null;
-
-            this._levelsSubscription?.Dispose();
-            this._levelsSubscription = null;
-
-            this._parameters?.Dispose();
-            this._parameters = null;
-
-            this._levels?.Dispose();
-            this._levels = null;
-
-            this._remoteSession?.Dispose();
-            this._remoteSession = null;
+            this.DisconnectSession(false);
 
             lock (this._gate)
             {
@@ -241,6 +236,220 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
                 this._rawCommandSnapshots.Clear();
                 this._rawAdjustmentSnapshots.Clear();
                 this._levelSnapshots.Clear();
+            }
+        }
+
+        private async Task<Boolean> TryConnectAsync()
+        {
+            if (this._disposed || this._connected)
+            {
+                return this._connected;
+            }
+
+            var application = this._application;
+            if (application == null)
+            {
+                return false;
+            }
+
+            IDisposable remoteSession;
+            try
+            {
+                PluginLog.Info("VM connect: initializing remote session");
+                remoteSession = await Remote.Initialize(RunVoicemeeterParam.None, application).ConfigureAwait(false);
+            }
+            catch
+            {
+                PluginLog.Warning("VM connect: remote initialization threw");
+                return false;
+            }
+
+            if (remoteSession == null)
+            {
+                PluginLog.Warning("VM connect: remote initialization returned null");
+                return false;
+            }
+
+            lock (this._connectionGate)
+            {
+                if (this._disposed)
+                {
+                    remoteSession.Dispose();
+                    return false;
+                }
+
+                if (this._connected)
+                {
+                    remoteSession.Dispose();
+                    return true;
+                }
+
+                this._remoteSession?.Dispose();
+                this._remoteSession = remoteSession;
+                this._connected = true;
+                this._connectedAtUtc = DateTime.UtcNow;
+                this._lastStartupDirtyLogUtc = default;
+                this._consecutiveDirtyFailures = 0;
+                PluginLog.Info("VM connect: session established");
+
+                this._parametersSubscription?.Dispose();
+                this._parameters?.Dispose();
+                this._parameters = new Parameters();
+                this._parametersSubscription = this._parameters.Subscribe(response => this.OnParametersPolled(response));
+                PluginLog.Verbose("VM connect: parameter polling subscribed");
+
+                this._levelsSubscription?.Dispose();
+                this._levels?.Dispose();
+                this._levels = new Levels();
+                this._levelsSubscription = this._levels.Subscribe(_ => this.RefreshFromLevels());
+                PluginLog.Verbose("VM connect: level polling subscribed");
+            }
+
+            PluginLog.Info("VM sync: refresh-all start");
+            this.RefreshAll();
+            PluginLog.Info("VM sync: refresh-all end");
+            return true;
+        }
+
+        private async Task ReconnectLoopAsync(CancellationToken cancellationToken)
+        {
+            var delay = TimeSpan.FromSeconds(1);
+            var immediateRetry = false;
+
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    if (this._connected)
+                    {
+                        PluginLog.Verbose("VM reconnect loop: waiting for reconnect signal");
+                        await this._reconnectSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        immediateRetry = true;
+                        continue;
+                    }
+
+                    if (!immediateRetry)
+                    {
+                        var signaled = await this._reconnectSignal.WaitAsync((Int32)delay.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
+                        if (signaled)
+                        {
+                            PluginLog.Verbose("VM reconnect loop: signaled for immediate retry");
+                            immediateRetry = true;
+                            continue;
+                        }
+                    }
+
+                    immediateRetry = false;
+
+                    PluginLog.Info($"VM reconnect loop: trying connect, delay={delay.TotalSeconds:0}s");
+                    if (await this.TryConnectAsync().ConfigureAwait(false))
+                    {
+                        delay = TimeSpan.FromSeconds(1);
+                        PluginLog.Info("VM reconnect loop: connect succeeded");
+                        continue;
+                    }
+
+                    delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30));
+                    PluginLog.Warning($"VM reconnect loop: connect failed, nextDelay={delay.TotalSeconds:0}s");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected on shutdown.
+            }
+        }
+
+        private void OnParametersPolled(Int32 response)
+        {
+            if (response < 0)
+            {
+                var connectedFor = DateTime.UtcNow - this._connectedAtUtc;
+                var withinGrace = connectedFor < this._startupDirtyGrace;
+
+                this._consecutiveDirtyFailures++;
+                if (withinGrace)
+                {
+                    var shouldLog = this._lastStartupDirtyLogUtc == default || (DateTime.UtcNow - this._lastStartupDirtyLogUtc) >= TimeSpan.FromSeconds(5);
+                    if (shouldLog)
+                    {
+                        this._lastStartupDirtyLogUtc = DateTime.UtcNow;
+                        PluginLog.Verbose($"VM parameters: dirty poll returned {response} during startup grace ({connectedFor.TotalSeconds:0.0}s), ignoring");
+                    }
+                    return;
+                }
+
+                if (this._consecutiveDirtyFailures < 3)
+                {
+                    PluginLog.Verbose($"VM parameters: dirty poll returned {response}, consecutiveFailures={this._consecutiveDirtyFailures}, waiting for confirmation");
+                    return;
+                }
+
+                PluginLog.Warning($"VM parameters: dirty poll returned {response}, disconnecting after {this._consecutiveDirtyFailures} consecutive failures");
+                this.DisconnectSession();
+                return;
+            }
+
+            if (this._consecutiveDirtyFailures > 0)
+            {
+                PluginLog.Verbose($"VM parameters: dirty poll recovered after {this._consecutiveDirtyFailures} consecutive failures");
+            }
+
+            this._consecutiveDirtyFailures = 0;
+            this.RefreshFromParameters();
+        }
+
+        private void DisconnectSession(Boolean signalReconnect = true)
+        {
+            var wasConnected = false;
+
+            lock (this._connectionGate)
+            {
+                wasConnected = this._connected;
+                this._connected = false;
+                this._connectedAtUtc = default;
+                this._lastStartupDirtyLogUtc = default;
+                this._consecutiveDirtyFailures = 0;
+
+                this._parametersSubscription?.Dispose();
+                this._parametersSubscription = null;
+
+                this._levelsSubscription?.Dispose();
+                this._levelsSubscription = null;
+
+                this._parameters?.Dispose();
+                this._parameters = null;
+
+                this._levels?.Dispose();
+                this._levels = null;
+
+                this._remoteSession?.Dispose();
+                this._remoteSession = null;
+            }
+
+            if (signalReconnect && wasConnected)
+            {
+                PluginLog.Warning("VM disconnect: session lost, signaling reconnect");
+                this.SignalReconnect();
+            }
+            else if (wasConnected)
+            {
+                PluginLog.Info("VM disconnect: session stopped");
+            }
+        }
+
+        private void SignalReconnect()
+        {
+            try
+            {
+                if (this._reconnectSignal.CurrentCount == 0)
+                {
+                    PluginLog.Verbose("VM reconnect: signal raised");
+                    this._reconnectSignal.Release();
+                }
+            }
+            catch
+            {
+                // ignored
             }
         }
 
@@ -876,7 +1085,9 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
 
         private void RefreshAll()
         {
+            PluginLog.Verbose("VM sync: refreshing parameters");
             this.RefreshFromParameters();
+            PluginLog.Verbose("VM sync: refreshing levels");
             this.RefreshFromLevels();
         }
 
@@ -887,46 +1098,53 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
                 return;
             }
 
-            List<String> changedKeys = [];
-
-            lock (this._gate)
+            try
             {
-                foreach (var key in this._booleanDefinitions.Keys.ToArray())
+                List<String> changedKeys = [];
+
+                lock (this._gate)
                 {
-                    if (this.RefreshBooleanTarget(key, false))
+                    foreach (var key in this._booleanDefinitions.Keys.ToArray())
                     {
-                        changedKeys.Add(key);
+                        if (this.RefreshBooleanTarget(key, false))
+                        {
+                            changedKeys.Add(key);
+                        }
+                    }
+
+                    foreach (var key in this._adjustmentDefinitions.Keys.ToArray())
+                    {
+                        if (this.RefreshAdjustmentTarget(key, false))
+                        {
+                            changedKeys.Add(key);
+                        }
+                    }
+
+                    foreach (var key in this._rawCommandSnapshots.Keys.ToArray())
+                    {
+                        if (this.RefreshRawCommandTarget(key, false))
+                        {
+                            changedKeys.Add(key);
+                        }
+                    }
+
+                    foreach (var key in this._rawAdjustmentSnapshots.Keys.ToArray())
+                    {
+                        if (this.RefreshRawAdjustmentTarget(key, false))
+                        {
+                            changedKeys.Add(key);
+                        }
                     }
                 }
 
-                foreach (var key in this._adjustmentDefinitions.Keys.ToArray())
+                if (changedKeys.Count > 0)
                 {
-                    if (this.RefreshAdjustmentTarget(key, false))
-                    {
-                        changedKeys.Add(key);
-                    }
-                }
-
-                foreach (var key in this._rawCommandSnapshots.Keys.ToArray())
-                {
-                    if (this.RefreshRawCommandTarget(key, false))
-                    {
-                        changedKeys.Add(key);
-                    }
-                }
-
-                foreach (var key in this._rawAdjustmentSnapshots.Keys.ToArray())
-                {
-                    if (this.RefreshRawAdjustmentTarget(key, false))
-                    {
-                        changedKeys.Add(key);
-                    }
+                    this.NotifyChanged(changedKeys);
                 }
             }
-
-            if (changedKeys.Count > 0)
+            catch
             {
-                this.NotifyChanged(changedKeys);
+                this.DisconnectSession();
             }
         }
 
@@ -937,27 +1155,39 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
                 return;
             }
 
-            List<String> changedKeys = [];
-
-            lock (this._gate)
+            try
             {
-                foreach (var key in this._levelSnapshots.Keys.ToArray())
+                List<String> changedKeys = [];
+
+                lock (this._gate)
                 {
-                    if (this.RefreshLevelTarget(key, false))
+                    foreach (var key in this._levelSnapshots.Keys.ToArray())
                     {
-                        changedKeys.Add(key);
+                        if (this.RefreshLevelTarget(key, false))
+                        {
+                            changedKeys.Add(key);
+                        }
                     }
                 }
-            }
 
-            if (changedKeys.Count > 0)
+                if (changedKeys.Count > 0)
+                {
+                    this.NotifyChanged(changedKeys);
+                }
+            }
+            catch
             {
-                this.NotifyChanged(changedKeys);
+                this.DisconnectSession();
             }
         }
 
         private Boolean RefreshBooleanTarget(String key, Boolean notify = true)
         {
+            if (!this._connected)
+            {
+                return false;
+            }
+
             if (!this._booleanDefinitions.TryGetValue(key, out var definition))
             {
                 return false;
@@ -995,6 +1225,11 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
 
         private Boolean RefreshAdjustmentTarget(String key, Boolean notify = true)
         {
+            if (!this._connected)
+            {
+                return false;
+            }
+
             if (!this._adjustmentDefinitions.TryGetValue(key, out var definition))
             {
                 return false;
@@ -1033,6 +1268,11 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
 
         private Boolean RefreshRawCommandTarget(String key, Boolean notify = true)
         {
+            if (!this._connected)
+            {
+                return false;
+            }
+
             if (!this._rawCommandSnapshots.TryGetValue(key, out var snapshot))
             {
                 return false;
@@ -1058,6 +1298,11 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
 
         private Boolean RefreshRawAdjustmentTarget(String key, Boolean notify = true)
         {
+            if (!this._connected)
+            {
+                return false;
+            }
+
             if (!this._rawAdjustmentSnapshots.TryGetValue(key, out var snapshot))
             {
                 return false;
@@ -1083,6 +1328,11 @@ namespace Loupedeck.VoiceMeeterPlugin.Services
 
         private Boolean RefreshLevelTarget(String key, Boolean notify = true)
         {
+            if (!this._connected)
+            {
+                return false;
+            }
+
             if (!this._levelSnapshots.TryGetValue(key, out var snapshot))
             {
                 return false;

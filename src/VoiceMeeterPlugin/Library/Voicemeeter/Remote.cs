@@ -6,6 +6,7 @@
     using Enums;
 
     using Extensions;
+    using Helpers;
 
     using Microsoft.Win32;
 
@@ -253,6 +254,7 @@
                     }
                 }
 
+                PluginLog.Info($"VM detect: version={Version}, installDir={directoryName}, executable={voicemeeterString}, remoteDll={(Environment.Is64BitProcess ? "VoicemeeterRemote64.dll" : "VoicemeeterRemote.dll")}");
 
                 _handle = Wrapper.LoadLibrary(
                     Path.Combine(directoryName,
@@ -260,12 +262,15 @@
             }
 
             var startVoiceMeeter = voicemeeterType != RunVoicemeeterParam.None;
+            PluginLog.Info($"VM login: requestedType={voicemeeterType}, startIfMissing={startVoiceMeeter}");
 
             if (await Login(voicemeeterType, startVoiceMeeter).ConfigureAwait(false))
             {
+                PluginLog.Info($"VM login: success, currentVersion={Version}");
                 return new VoicemeeterClient();
             }
 
+            PluginLog.Warning($"VM login: failed, requestedType={voicemeeterType}, startIfMissing={startVoiceMeeter}");
             return null;
         }
 
@@ -273,16 +278,20 @@
         {
             while (true)
             {
-                switch ((LoginResponse)RemoteWrapper.LoginVoicemeeter())
+                PluginLog.Verbose($"VM login attempt: retry={retry}, requestedType={voicemeeterType}");
+                var response = (LoginResponse)RemoteWrapper.LoginVoicemeeter();
+                switch (response)
                 {
                     case LoginResponse.Ok:
                     case LoginResponse.AlreadyLoggedIn:
+                        PluginLog.Verbose("VM login attempt: connected");
                         return true;
 
                     case LoginResponse.VoicemeeterNotRunning:
                         if (retry)
                         {
                             // Run voicemeeter program
+                            PluginLog.Warning($"VM login attempt: not running, starting requestedType={voicemeeterType}");
                             Start(voicemeeterType);
 
                             await Task.Delay(2000).ConfigureAwait(false);
@@ -290,9 +299,11 @@
                             continue;
                         }
 
+                        PluginLog.Warning("VM login attempt: not running and retry disabled");
                         break;
                 }
 
+                PluginLog.Warning($"VM login attempt: failed with response={response}");
                 return false;
             }
         }

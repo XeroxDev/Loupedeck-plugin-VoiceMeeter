@@ -33,7 +33,7 @@
                 }
 
                 var response = Remote.IsParametersDirty();
-                if (response > 0)
+                if (response != 0)
                 {
                     this.Notify(response);
                 }
@@ -41,9 +41,9 @@
 
         public IDisposable Subscribe(IObserver<Int32> observer)
         {
-            if (!this._observers.Contains(observer))
+            lock (this._observers)
             {
-                lock (this._observers)
+                if (!this._observers.Contains(observer))
                 {
                     this._observers.Add(observer);
                 }
@@ -54,12 +54,15 @@
 
         private void Notify(Int32 value)
         {
+            IObserver<Int32>[] observers;
             lock (this._observers)
             {
-                foreach (var observer in this._observers)
-                {
-                    observer.OnNext(value);
-                }
+                observers = this._observers.ToArray();
+            }
+
+            foreach (var observer in observers)
+            {
+                observer.OnNext(value);
             }
         }
 
@@ -73,9 +76,12 @@
         {
             public void Dispose()
             {
-                if (observer != null && observers.Contains(observer))
+                lock (observers)
                 {
-                    observers.Remove(observer);
+                    if (observer != null && observers.Contains(observer))
+                    {
+                        observers.Remove(observer);
+                    }
                 }
             }
         }
