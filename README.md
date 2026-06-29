@@ -31,7 +31,7 @@ This Loupedeck Plugin allows you to control the [VoiceMeeter](https://voicemeete
 # 4. Support / Feedback
 You found a bug? You have a feature request? I would love to hear about it [here](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/issues/new/choose) or click on the "Issues" tab here on the GitHub repositorie!
 
-You can also join my discord [here](https://s.tswi.me/discord)
+You can also join my discord [here](https://x.xeroxdev.de/s/discord)
 
 # 5. How to use it?
 
