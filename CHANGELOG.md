@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.2.0](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v4.1.0...v4.2.0) (2026-07-05)
+
+
+### Features
+
+* **raw-command:** support raw scripts, toggles, and multi-actions ([59f09f1](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/59f09f1885d3cad0a399629aa06fbc244538ac16))
+
+
+### Bug Fixes
+
+* auto-reconnect broke, re-implemented it with improved detection system ([ea665bb](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/ea665bb0288490df95861c0d86747aa0f6a8934e))
+* broken discord link ([46a79e2](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/46a79e2ebc49677e682ef0f075971dabdeeafcd5))
+* copy-paste unload bugs in base action classes ([e07a364](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/e07a364e4546bbeaef0c109d2653ab700b1fa922))
+* exception on shutdown ([9e1f878](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/9e1f87818bdc41a2fb8337581e2eaee5778e2c78))
+* harden unregister on plugin onload ([819b743](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/819b743b8c9bcd7771d91a7e1998556ce27505be))
+* improve action image rendering ([027cf52](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/027cf52832085491384ac7a046633fdf41b44897))
+* latest version crashes ([9e1f878](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/9e1f87818bdc41a2fb8337581e2eaee5778e2c78))
+* make raw command probing silent for write-only VM commands ([2e30339](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/2e3033943546ee4eaf3977e64e8d01101b8d1a81))
+* prevent invalid action ids from falling through into array access ([61beb97](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/61beb9729da0edd60cb5580e05eebb2b5f0a0ff5))
+* remove unsupported RawAdjustment textbox format and align validation with parsing ([bf4579b](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/bf4579bdbf08ef38551891c8cf80be683db1b7b5))
+* save configuration routing ([a2b8ade](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/a2b8ade71f8213a3074fd9b8db35aff305871e5a))
+* support multi-command scripts with comma, semicolon, and newline separators ([4abefb1](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/4abefb1c5f54912d4dff23081e41f6f6da920af5))
+* tighten raw action validation and lifecycle ([7709e0c](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/7709e0cb9e37a4cd4588b6d2641637fd4fcf475f))
+
+
+### Performance Improvements
+
+* update render frequency to increase performance ([41e8747](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/commit/41e87475c486d43ee429b1218e8f535d2116f2c4))
+
 ## [4.1.0](https://github.com/XeroxDev/Loupedeck-plugin-VoiceMeeter/compare/v4.0.1...v4.1.0) (2025-03-25)
 
 
